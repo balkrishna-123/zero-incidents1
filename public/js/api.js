@@ -53,3 +53,46 @@ export const api = {
   patch: (url, body) => request(url, { method: "PATCH", body }),
   delete: (url, body) => request(url, { method: "DELETE", body }),
 };
+
+// Authenticated binary download; unlike a navigation this keeps API errors in the UI.
+export async function downloadFile(url, filename) {
+  let response;
+  try {
+    response = await fetch(`/api${url}`, {
+      credentials: "same-origin",
+      headers: { Accept: "application/pdf" },
+    });
+  } catch {
+    throw new ApiError(
+      "Unable to download. Check the connection and try again.",
+      0,
+    );
+  }
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 401)
+      window.dispatchEvent(new CustomEvent("session-ended"));
+    if (data.code === "PASSWORD_CHANGE_REQUIRED")
+      window.dispatchEvent(new CustomEvent("password-required"));
+    throw new ApiError(
+      data.error || "The certificate could not be downloaded.",
+      response.status,
+      data.fields,
+      data.code,
+    );
+  }
+  if (!response.headers.get("content-type")?.includes("application/pdf"))
+    throw new ApiError(
+      "The server did not return a PDF. Refresh the page and try again.",
+      502,
+    );
+  const blob = await response.blob();
+  const objectURL = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectURL;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(objectURL), 15000);
+}

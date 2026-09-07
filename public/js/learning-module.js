@@ -1,6 +1,12 @@
 import { icon } from "./icons.js";
 import { esc, notify, formatDate } from "./ui.js";
 import { MODULE_VIEWS } from "./module-views.js";
+import {
+  hazardPanel,
+  hazardSceneStates,
+  hazardBreakdown,
+  inspectionReviewHTML,
+} from "./hazard-walk.js";
 
 const starRow = (n) =>
   `<span class="training-stars" aria-label="${n} of 3 stars">${[1, 2, 3].map((i) => `<span class="${i <= n ? "earned" : ""}" aria-hidden="true">★</span>`).join("")}</span>`;
@@ -16,22 +22,23 @@ export async function learningModulePage(
   if (!view) throw new Error("This training module is not available.");
   const data = await ctx.api.get(`/training/${moduleKey}`);
   const c = data.course;
+  const hunt = c.type === "hunt";
   const guideName = data.trainer?.nickname || "Your safety guide";
   const guideImage = data.trainer
     ? `<img src="${esc(data.trainer.imageUrl)}" alt="${esc(guideName)}, your virtual trainer">`
     : `<span class="training-guide-icon">${icon("shield", 23)}</span>`;
   return {
     title: c.title,
-    html: `<div class="learning-module ${moduleKey === "manual-handling" ? "manual-training" : "height-training"}" data-training-module data-course="${esc(moduleKey)}">
+    html: `<div class="learning-module ${hunt ? "hazard-training" : moduleKey === "manual-handling" ? "manual-training" : "height-training"}" data-training-module data-course="${esc(moduleKey)}">
       <a href="#/employee/hub" class="training-back">${icon("arrow", 14)} Back to training hub</a>
       <header class="training-heading"><div class="training-heading-title"><span class="training-module-icon">${icon(view.icon, 24)}</span><div><div class="page-eyebrow">MODULE ${view.number} · ${esc(c.zone.toUpperCase())}</div><h1>${esc(c.title)}</h1><p>${esc(c.subtitle)}</p></div></div><span class="training-save-status">${icon("shield", 13)} <span data-save-label>Progress saves automatically</span></span></header>
-      <ol class="training-steps" aria-label="Module stages"><li data-step="intro"><span>01</span> Briefing</li><li data-step="activity"><span>02</span> Practical activity <small>70 marks</small></li><li data-step="quiz"><span>03</span> Knowledge check <small>30 marks</small></li><li data-step="result"><span>04</span> Your result</li></ol>
+      <ol class="training-steps" aria-label="Module stages"><li data-step="intro"><span>01</span> Briefing</li><li data-step="activity"><span>02</span> ${hunt ? "Safety walk" : "Practical activity"} <small>70 marks</small></li><li data-step="quiz"><span>03</span> Knowledge check <small>30 marks</small></li><li data-step="result"><span>04</span> Your result</li></ol>
       <div class="training-error" role="alert" hidden><span data-error-text></span><button class="btn btn-secondary btn-small" data-reconnect>Reconnect</button></div>
       <div class="training-workspace" data-activity-layout>
         <section class="warehouse-frame" aria-label="Interactive warehouse"><header class="warehouse-topline"><span><i></i> ${esc(c.zone.toUpperCase())} <small>${view.number}</small></span><span class="scene-360">360° INTERACTIVE</span></header><div class="warehouse-view" data-warehouse><div class="scene-loading">${icon(view.icon, 28)}<span>Preparing the ${esc(c.zone.toLowerCase())}…</span></div></div><div class="warehouse-controls"><span>${icon("eye", 14)} Drag to look · click a marker</span><div><button type="button" data-look="left" title="Look left" aria-label="Look left">←</button><button type="button" data-look="right" title="Look right" aria-label="Look right">→</button><button type="button" data-look="in" title="Zoom in" aria-label="Zoom in">+</button><button type="button" data-look="out" title="Zoom out" aria-label="Zoom out">−</button><button type="button" data-look="reset" title="Locate the current checkpoint" aria-label="Locate the current checkpoint">${icon("refresh", 14)}</button></div></div><div class="warehouse-footnote">Use arrow keys while the scene is focused, or use the scene checkpoints below.</div></section>
         <aside class="training-side panel"><div class="training-coach">${guideImage}<div><strong>${esc(guideName)}</strong><small>YOUR SAFETY GUIDE</small></div><span class="coach-dot"></span></div><div class="lesson-panel" data-lesson-panel></div></aside>
       </div>
-      <section class="scene-checkpoints panel" data-checkpoints aria-label="Accessible scene checkpoints"><header><div><h2>Scene checkpoints</h2><p>These controls provide the same activity without dragging the 3D view.</p></div><span data-checkpoint-count>0 / 5</span></header><div class="checkpoint-list">${c.objects.map((o, i) => `<div class="checkpoint" data-checkpoint="${o.id}"><span class="checkpoint-index">${i + 1}</span><strong>${esc(o.label)}</strong><button type="button" data-focus-object="${o.id}" aria-label="Locate ${esc(o.label)} in the scene">Locate</button><button type="button" data-inspect-object="${o.id}">Inspect</button></div>`).join("")}</div></section>
+      <section class="scene-checkpoints panel" data-checkpoints aria-label="Accessible scene checkpoints"><header><div><h2>${hunt ? "Areas to review" : "Scene checkpoints"}</h2><p>These controls provide the same activity without dragging the 3D view.</p></div><span data-checkpoint-count>0 / ${hunt ? c.areaCount : 5}</span></header><div class="checkpoint-list">${c.objects.map((o, i) => `<div class="checkpoint" data-checkpoint="${o.id}"><span class="checkpoint-index">${i + 1}</span><strong>${esc(o.label)}</strong>${hunt ? '<small class="hunt-area-status" data-area-status>Not reviewed</small>' : ""}<button type="button" data-focus-object="${o.id}" aria-label="Locate ${esc(o.label)} in the scene">Locate</button><button type="button" data-inspect-object="${o.id}">Inspect</button></div>`).join("")}</div></section>
       <div class="training-assessment" data-assessment hidden></div>
       <div class="training-foundations" data-foundations>${view.primer}<details class="training-references"><summary>Sources, scope and important safety information</summary><p>${esc(c.notice)}</p><p>The learner should follow a competent workplace assessment, equipment instructions and the employer’s procedures. ${esc(view.scope)}</p><div>${c.references.map(source).join("")}</div></details></div>
       <section class="panel training-history" data-history-panel ${data.history.length ? "" : "hidden"}><header class="panel-head"><div><h2>Your previous attempts</h2><p>Real assessment history. Your best assessed score is retained.</p></div>${icon("clock", 18)}</header><div data-history-list></div></section>
@@ -54,7 +61,17 @@ export async function learningModulePage(
         expirySent = false,
         bestScore = data.bestScore,
         history = [...data.history];
+      let finalCompletion = null;
       let sceneUnavailable = false;
+      let walkOverview = false;
+      const activeObject = () =>
+        hunt
+          ? walkOverview
+            ? null
+            : attempt?.inspection?.id || null
+          : attempt?.nextTask?.objectId || c.objects[0].id;
+      const sceneStates = () =>
+        hunt ? hazardSceneStates(attempt) : attempt?.activityAnswers || [];
       const attemptPath = () => `/training/attempts/${attempt.id}`;
       const announce = (text) => {
         if (alive) wrap.querySelector("[data-announcement]").textContent = text;
@@ -110,10 +127,23 @@ export async function learningModulePage(
           }
           attempt = response.attempt;
           bestScore = response.bestScore;
+          finalCompletion = response.completion || null;
           if (attempt) historyReplace(attempt.id);
           heldFeedback = feedback
             ? response.feedback || attempt.lastFeedback
             : null;
+          if (
+            heldFeedback?.kind === "quiz" &&
+            (!["feedback", "completed"].includes(attempt.phase) ||
+              heldFeedback.id !== attempt.lastQuizQuestionId)
+          )
+            heldFeedback = null;
+          if (
+            heldFeedback &&
+            heldFeedback.kind !== "quiz" &&
+            !["activity", "quiz-ready"].includes(attempt.phase)
+          )
+            heldFeedback = null;
           status("All responses saved");
           expirySent = false;
           render();
@@ -134,7 +164,7 @@ export async function learningModulePage(
       function setDisabled(value) {
         wrap
           .querySelectorAll(
-            "[data-start-training], [data-activity-option], [data-quiz-option], [data-quiz-next], [data-inspect-object], [data-retry-training], [data-history-id], [data-quiz-skip]",
+            "[data-start-training], [data-activity-option], [data-quiz-option], [data-quiz-next], [data-inspect-object], [data-retry-training], [data-history-id], [data-quiz-skip], [data-classify]",
           )
           .forEach((b) => {
             b.disabled =
@@ -144,7 +174,28 @@ export async function learningModulePage(
           });
       }
       function feedbackHTML(f, nextLabel, extraClass = "") {
-        return `<section class="decision-feedback ${f.correct ? "correct" : "needs-review"} ${extraClass}" data-feedback><span class="feedback-mark">${icon(f.correct ? "checkCircle" : "info", 22)}</span><div class="feedback-eyebrow">${f.timedOut ? "TIME EXPIRED" : f.correct ? "SAFER DECISION" : "LET’S REVIEW"}</div><h2>${f.correct ? "Well done." : f.timedOut ? "Time’s up." : "A safer choice is available."}</h2><span class="feedback-points">${f.points} / ${f.kind === "quiz" ? 6 : 14} marks</span>${!f.correct ? `<div class="correct-response"><strong>Safer response</strong><p>${esc(f.correctAnswer)}</p></div>` : ""}<p>${esc(f.explanation)}</p>${f.kind === "activity" ? '<p class="lesson-small">The scene now shows the safer arrangement for learning. Marks remain based on your first response.</p>' : ""}${source(f.reference)}<button class="btn btn-primary training-next" data-feedback-next>${nextLabel} ${icon("arrow", 15)}</button>${f.timedOut ? '<div class="auto-next-note">Continuing automatically in a moment. <button type="button" data-pause-auto>Pause to read</button></div>' : ""}</section>`;
+        const comparison = f.kind === "classification" && !f.isHazard;
+        const partial =
+          f.kind === "activity" &&
+          f.responsePoints === 7 &&
+          f.identificationPoints === 0;
+        const label = comparison
+          ? f.correct
+            ? "Area reviewed · no deduction"
+            : "−2 activity marks"
+          : `${f.kind === "activity" && hunt ? "Checkpoint total: " : ""}${f.points} / ${f.maxPoints || (f.kind === "quiz" ? 6 : 14)} marks`;
+        const title = comparison
+          ? f.correct
+            ? "No hazard shown here."
+            : "Review this comparison area."
+          : partial
+            ? "Good control. Review the identification."
+            : f.correct
+              ? "Well done."
+              : f.timedOut
+                ? "Time’s up."
+                : "A safer choice is available.";
+        return `<section class="decision-feedback ${f.correct ? "correct" : "needs-review"} ${extraClass}" data-feedback><span class="feedback-mark">${icon(f.correct ? "checkCircle" : "info", 22)}</span><div class="feedback-eyebrow">${f.timedOut ? "TIME EXPIRED" : f.kind === "classification" ? "AREA CLASSIFICATION" : f.correct ? "SAFER DECISION" : "LET’S REVIEW"}</div><h2>${title}</h2><span class="feedback-points">${label}</span>${!f.correct && !partial ? `<div class="correct-response"><strong>Safer assessment</strong><p>${esc(f.correctAnswer)}</p></div>` : ""}${hunt && f.kind === "activity" ? `<div class="hunt-point-split">Identification ${f.identificationPoints}/7 · Response ${f.responsePoints}/7</div>` : ""}<p>${esc(f.explanation)}</p>${f.kind === "activity" ? '<p class="lesson-small">The scene shows example controls for learning. Marks remain based on your first decisions; a visual change is not real-world authorisation.</p>' : ""}${source(f.reference)}<button class="btn btn-primary training-next" data-feedback-next>${nextLabel} ${icon("arrow", 15)}</button>${f.timedOut ? '<div class="auto-next-note">Continuing automatically in a moment. <button type="button" data-pause-auto>Pause to read</button></div>' : ""}</section>`;
       }
       function setStage(stage) {
         const stages = ["intro", "activity", "quiz", "result"];
@@ -175,59 +226,76 @@ export async function learningModulePage(
         const activityShown =
           !attempt ||
           ["activity", "quiz-ready"].includes(attempt.phase) ||
-          heldFeedback?.kind === "activity";
+          (heldFeedback && heldFeedback.kind !== "quiz");
         wrap.querySelector("[data-activity-layout]").hidden = !activityShown;
         wrap.querySelector("[data-checkpoints]").hidden = !activityShown;
         wrap.querySelector("[data-foundations]").hidden = !activityShown;
         assessment.hidden = activityShown;
         scene?.setVisible(activityShown);
-        scene?.update(
-          attempt?.activityAnswers || [],
-          attempt?.nextTask?.objectId || c.objects[0].id,
-        );
+        scene?.update(sceneStates(), activeObject());
         const done = attempt?.activityDone || 0;
-        wrap.querySelector("[data-checkpoint-count]").textContent =
-          `${done} / 5`;
+        wrap.querySelector("[data-checkpoint-count]").textContent = hunt
+          ? `${attempt?.areasReviewed || 0} / 8 reviewed · ${done} / 5 responses`
+          : `${done} / 5`;
         wrap.querySelectorAll("[data-checkpoint]").forEach((el) => {
-          const a = attempt?.activityAnswers.find(
-            (a) => a.objectId === el.dataset.checkpoint,
+          const id = el.dataset.checkpoint;
+          const answer = attempt?.activityAnswers.find(
+            (a) => a.objectId === id,
+          );
+          const classification = hunt
+            ? attempt?.classifications?.find((x) => x.objectId === id)
+            : null;
+          const complete = Boolean(
+            answer || (classification && !classification.isHazard),
           );
           el.classList.toggle(
             "checkpoint-current",
-            Boolean(attempt?.nextTask?.objectId === el.dataset.checkpoint),
+            hunt ? activeObject() === id : attempt?.nextTask?.objectId === id,
           );
-          el.classList.toggle("checkpoint-done", Boolean(a));
-          el.querySelector("[data-inspect-object]").textContent = a
-            ? a.correct
-              ? "✓ 14 marks"
-              : "Reviewed · 0"
-            : "Inspect";
-          el.querySelector("[data-inspect-object]").hidden = Boolean(a);
+          el.classList.toggle("checkpoint-done", complete);
+          el.querySelector("[data-inspect-object]").textContent =
+            hunt && classification ? "Continue" : "Inspect";
+          el.querySelector("[data-inspect-object]").hidden = complete;
+          if (hunt)
+            el.querySelector("[data-area-status]").textContent = answer
+              ? `Response saved · ${answer.points}/14`
+              : classification
+                ? classification.isHazard
+                  ? "Needs a response"
+                  : classification.correct
+                    ? "Reviewed · no hazard shown"
+                    : "Reviewed · incorrect flag"
+                : "Not reviewed";
         });
         if (!attempt) {
           setStage("intro");
-          lesson.innerHTML = `<div class="lesson-eyebrow">YOUR MISSION</div><h2>${esc(view.missionTitle)}</h2>${data.trainer?.introduction ? `<details class="trainer-welcome"><summary>A welcome from ${esc(guideName)}</summary><p>${esc(data.trainer.introduction)}</p></details>` : ""}<p>${esc(view.mission)}</p>${view.briefNote ? `<p class="height-brief-note">${esc(view.briefNote)}</p>` : ""}<div class="lesson-score-split"><div><strong>70</strong><span>Activity marks</span></div><div><strong>30</strong><span>Quiz marks</span></div><div><strong>70%</strong><span>To pass</span></div></div><ul class="training-briefing"><li>Explore the scene and inspect five checkpoints in order.</li><li>Your first choice counts. Read the feedback after each decision.</li><li>Finish with five questions: 20 seconds per question.</li><li>Progress is saved on the server. You can resume or retake.</li></ul>${bestScore !== null ? `<div class="training-best">Your assessed best: <strong>${bestScore}/100</strong></div>` : ""}<label class="training-ack"><input type="checkbox" id="training-ack"><span>I’ve read the briefing. I understand this simulation does not replace workplace instruction.</span></label><button class="btn btn-primary training-start" data-start-training disabled>Start practical activity ${icon("arrow", 15)}</button>`;
+          lesson.innerHTML = `<div class="lesson-eyebrow">YOUR MISSION</div><h2>${esc(view.missionTitle)}</h2>${data.trainer?.introduction ? `<details class="trainer-welcome"><summary>A welcome from ${esc(guideName)}</summary><p>${esc(data.trainer.introduction)}</p></details>` : ""}<p>${esc(view.mission)}</p>${view.briefNote ? `<p class="height-brief-note">${esc(view.briefNote)}</p>` : ""}<div class="lesson-score-split"><div><strong>70</strong><span>Activity marks</span></div><div><strong>30</strong><span>Quiz marks</span></div><div><strong>70%</strong><span>To pass</span></div></div><ul class="training-briefing">${hunt ? c.instructions.map((line) => `<li>${esc(line)}</li>`).join("") : "<li>Explore the scene and inspect five checkpoints in order.</li><li>Your first choice counts. Read the feedback after each decision.</li><li>Finish with five questions: 20 seconds per question.</li><li>Progress is saved on the server. You can resume or retake.</li>"}</ul>${bestScore !== null ? `<div class="training-best">Your assessed best: <strong>${bestScore}/100</strong></div>` : ""}<label class="training-ack"><input type="checkbox" id="training-ack"><span>I’ve read the briefing. I understand this simulation does not replace workplace instruction.</span></label><button class="btn btn-primary training-start" data-start-training disabled>${hunt ? "Start safety walk" : "Start practical activity"} ${icon("arrow", 15)}</button>`;
         } else if (heldFeedback) {
-          setStage(heldFeedback.kind === "activity" ? "activity" : "quiz");
+          setStage(heldFeedback.kind !== "quiz" ? "activity" : "quiz");
           const isLast = attempt.phase === "completed";
-          const html = feedbackHTML(
-            heldFeedback,
-            isLast
-              ? "View my result"
-              : heldFeedback.kind === "activity"
-                ? attempt.phase === "quiz-ready"
-                  ? "Continue to quiz"
-                  : "Next checkpoint"
-                : "Next question",
-          );
-          if (heldFeedback.kind === "activity") lesson.innerHTML = html;
+          const nextLabel = isLast
+            ? "View my result"
+            : heldFeedback.kind === "quiz"
+              ? "Next question"
+              : attempt.phase === "quiz-ready"
+                ? "Continue to quiz"
+                : hunt
+                  ? heldFeedback.kind === "classification" &&
+                    heldFeedback.isHazard
+                    ? "Choose a safer response"
+                    : "Continue safety walk"
+                  : "Next checkpoint";
+          const html = feedbackHTML(heldFeedback, nextLabel);
+          if (heldFeedback.kind !== "quiz") lesson.innerHTML = html;
           else
             assessment.innerHTML = `<div class="quiz-focus-card panel">${html}</div>`;
           if (heldFeedback.timedOut)
             autoAdvance = setTimeout(advanceFeedback, 3500);
         } else if (attempt.phase === "activity") {
           setStage("activity");
-          if (!attempt.task) {
+          if (hunt) {
+            lesson.innerHTML = hazardPanel(c, attempt, walkOverview);
+          } else if (!attempt.task) {
             const t = attempt.nextTask;
             lesson.innerHTML = `<div class="lesson-eyebrow">CHECKPOINT ${t.number} OF 5</div><h2>${esc(t.title)}</h2><div class="lesson-progress"><i style="width:${done * 20}%"></i></div><p>Find the highlighted checkpoint in the ${esc(c.zone.toLowerCase())}. Inspect it, then choose the safest response.</p><div class="checkpoint-cue"><span>${t.number}</span><div><strong>${esc(c.objects.find((o) => o.id === t.objectId).label)}</strong><small>One decision · 14 marks</small></div></div><button class="btn btn-primary training-start" data-inspect-object="${t.objectId}">Inspect checkpoint ${icon("eye", 15)}</button><button class="btn btn-secondary training-start" data-focus-object="${t.objectId}">Locate in 3D ${icon("arrow", 15)}</button><p class="lesson-small">The activity is untimed. ${esc(view.studyHint)}</p>`;
           } else {
@@ -236,9 +304,8 @@ export async function learningModulePage(
           }
         } else if (attempt.phase === "quiz-ready") {
           setStage("quiz");
-          const points =
-            attempt.activityAnswers.filter((x) => x.correct).length * 14;
-          lesson.innerHTML = `<div class="lesson-eyebrow">ACTIVITY COMPLETE</div><h2>Ready to check your knowledge?</h2><div class="activity-total"><strong>${points}<small>/70</small></strong><span>Activity marks earned</span></div><p>Five questions, worth 6 marks each. You have <strong>20 seconds per question</strong>. Choose an answer to submit it.</p><p>At zero, an unanswered question earns no marks and the quiz continues after a short explanation. Reloading or switching tabs does not reset the timer.</p><button class="btn btn-primary training-start" data-quiz-next>Start timed quiz ${icon("arrow", 15)}</button><p class="lesson-small">The timer starts only when you press this button. You can read feedback between questions.</p>`;
+          const points = attempt.activityScore;
+          lesson.innerHTML = `<div class="lesson-eyebrow">ACTIVITY COMPLETE</div><h2>Ready to check your knowledge?</h2><div class="activity-total"><strong>${points}<small>/70</small></strong><span>Activity marks earned</span></div>${hunt ? hazardBreakdown(attempt) : ""}<p>Five questions, worth 6 marks each. You have <strong>20 seconds per question</strong>. Choose an answer to submit it.</p><p>At zero, an unanswered question earns no marks and the quiz continues after a short explanation. Reloading or switching tabs does not reset the timer.</p><button class="btn btn-primary training-start" data-quiz-next>Start timed quiz ${icon("arrow", 15)}</button><p class="lesson-small">The timer starts only when you press this button. You can read feedback between questions.</p>`;
         } else if (attempt.phase === "quiz") {
           setStage("quiz");
           renderQuestion();
@@ -297,7 +364,7 @@ export async function learningModulePage(
             completedAt: attempt.completedAt,
             ...r,
           });
-        assessment.innerHTML = `<div class="module-result" data-module-result><section class="result-summary panel"><span class="result-kicker">${esc(c.title.toUpperCase())} · RESULT SAVED</span><div class="result-ring ${r.passed ? "pass" : "retake"}" style="--result:${r.score}"><div><strong>${r.score}</strong><span>OUT OF 100</span></div></div>${starRow(r.stars)}<h2>${r.passed ? (r.score >= 85 ? "Excellent work." : "Module passed.") : "Let’s build on this."}</h2><span class="badge ${r.passed ? "green" : "amber"}">${priorPassRetained ? "Practice result" : r.classification} · ${r.passed ? "70+ achieved" : priorPassRetained ? "Earlier pass kept" : "Retake required"}</span><div class="result-breakdown"><div><span>Practical activity</span><strong>${r.activityScore}<small>/70</small></strong></div><div><span>Knowledge check</span><strong>${r.quizScore}<small>/30</small></strong></div></div><div class="training-best">Your assessed best: <strong>${bestScore}/100</strong></div><button class="btn btn-primary training-start" data-retry-training>${r.passed || priorPassRetained ? "Practise again" : "Retake module"} ${icon("refresh", 15)}</button><a class="btn btn-secondary training-start" href="#/employee/progress">View my progress ${icon("arrow", 15)}</a></section><section class="result-review panel"><div class="training-coach">${guideImage}<div><strong>${esc(guideName)}</strong><small>YOUR TRAINER’S FEEDBACK</small></div></div><div class="result-feedback"><h3>${r.passed ? "Keep making safer decisions." : "Review. Reassess. Try again."}</h3><p>${esc(priorPassRetained ? "This practice attempt was below the pass mark, but your earlier passing best still counts. Review the missed decisions and practise again whenever you are ready." : r.feedback)}</p><div class="result-scope">This is your ${esc(c.title)} result only. All three modules must be passed individually at 70/100 or higher. Manual Handling and Working at Height are playable; Hazard Perception and the final certificate flow are coming next. ${esc(view.scope)}</div><h3 class="review-title">Your decisions, explained</h3>${r.review.map((f, i) => `<details class="answer-review"><summary><span class="review-status ${f.correct ? "correct" : "incorrect"}">${icon(f.correct ? "checkCircle" : "info", 15)}</span><span>${i < 5 ? "Activity" : "Quiz"} ${i < 5 ? i + 1 : i - 4} · ${esc(f.title)}</span><strong>${f.points}/${f.kind === "activity" ? 14 : 6}</strong></summary><div><p><strong>Your response:</strong> ${esc(f.selected || (f.timedOut ? "Time expired" : "Skipped"))}</p><p><strong>Safer response:</strong> ${esc(f.correctAnswer)}</p><p>${esc(f.explanation)}</p>${source(f.reference)}</div></details>`).join("")}<p class="lesson-small">Stars: 3 for 85–100, 2 for 70–84, 1 for below 70 (retake required). Later retakes cannot reduce a genuine assessed best score. A sample score is not a real assessed best.</p></div></section></div>`;
+        assessment.innerHTML = `<div class="module-result" data-module-result><section class="result-summary panel"><span class="result-kicker">${esc(c.title.toUpperCase())} · RESULT SAVED</span><div class="result-ring ${r.passed ? "pass" : "retake"}" style="--result:${r.score}"><div><strong>${r.score}</strong><span>OUT OF 100</span></div></div>${starRow(r.stars)}<h2>${r.passed ? (r.score >= 85 ? "Excellent work." : "Module passed.") : "Let’s build on this."}</h2><span class="badge ${r.passed ? "green" : "amber"}">${priorPassRetained ? "Practice result" : r.classification} · ${r.passed ? "70+ achieved" : priorPassRetained ? "Earlier pass kept" : "Retake required"}</span><div class="result-breakdown"><div><span>Practical activity</span><strong>${r.activityScore}<small>/70</small></strong></div><div><span>Knowledge check</span><strong>${r.quizScore}<small>/30</small></strong></div></div>${hunt ? hazardBreakdown(r) : ""}<div class="training-best">Your assessed best: <strong>${bestScore}/100</strong></div><button class="btn btn-primary training-start" data-retry-training>${r.passed || priorPassRetained ? "Practise again" : "Retake module"} ${icon("refresh", 15)}</button><a class="btn btn-secondary training-start" href="#/employee/progress">View my progress ${icon("arrow", 15)}</a><a class="btn btn-secondary training-start" href="#/employee/certificates">${icon("award", 15)}${finalCompletion?.eligible ? "Completion & certificate" : "Completion summary"}</a></section><section class="result-review panel"><div class="training-coach">${guideImage}<div><strong>${esc(guideName)}</strong><small>YOUR TRAINER’S FEEDBACK</small></div></div><div class="result-feedback"><h3>${r.passed ? "Keep making safer decisions." : "Review. Reassess. Try again."}</h3><p>${esc(priorPassRetained ? "This practice attempt was below the pass mark, but your earlier passing best still counts. Review the missed decisions and practise again whenever you are ready." : r.feedback)}</p><div class="result-scope">This is your ${esc(c.title)} result only. All three modules must be passed individually at 70/100 or higher. All three modules are now playable. ${finalCompletion?.eligible ? "Your genuine assessments meet the certificate requirement. Open the completion summary to generate or download your PDF." : "Open the completion summary to see which genuine passes are still required for your certificate."} ${esc(view.scope)}</div>${hunt ? inspectionReviewHTML(r) : ""}<h3 class="review-title">${hunt ? "Hazard responses and quiz, explained" : "Your decisions, explained"}</h3>${r.review.map((f, i) => `<details class="answer-review"><summary><span class="review-status ${f.correct ? "correct" : "incorrect"}">${icon(f.correct ? "checkCircle" : "info", 15)}</span><span>${i < 5 ? "Activity" : "Quiz"} ${i < 5 ? i + 1 : i - 4} · ${esc(f.title)}</span><strong>${f.points}/${f.kind === "activity" ? 14 : 6}</strong></summary><div>${f.identificationPoints !== undefined ? `<p><strong>Checkpoint split:</strong> identification ${f.identificationPoints}/7 · response ${f.responsePoints}/7</p>` : ""}<p><strong>Your response:</strong> ${esc(f.selected || (f.timedOut ? "Time expired" : "Skipped"))}</p><p><strong>Safer response:</strong> ${esc(f.correctAnswer)}</p><p>${esc(f.explanation)}</p>${source(f.reference)}</div></details>`).join("")}<p class="lesson-small">Stars: 3 for 85–100, 2 for 70–84, 1 for below 70 (retake required). Later retakes cannot reduce a genuine assessed best score. A sample score is not a real assessed best.</p></div></section></div>`;
         announce(
           `${c.title} result: ${r.score} out of 100. ${r.classification}.`,
         );
@@ -307,6 +374,8 @@ export async function learningModulePage(
         clearTimeout(autoAdvance);
         const f = heldFeedback;
         heldFeedback = null;
+        if (hunt && f?.kind !== "quiz")
+          walkOverview = f?.kind !== "classification" || !f.isHazard;
         if (f?.kind === "quiz" && attempt.phase !== "completed") nextQuestion();
         else {
           render();
@@ -328,7 +397,14 @@ export async function learningModulePage(
           );
           return;
         }
-        if (attempt.activityAnswers.some((a) => a.objectId === id)) {
+        if (hunt && attempt.phase !== "activity") {
+          scene?.focus(id);
+          notify(
+            "The safety walk is complete. Continue to the quiz or review your saved result.",
+          );
+          return;
+        }
+        if (!hunt && attempt.activityAnswers.some((a) => a.objectId === id)) {
           scene?.focus(id);
           notify(
             "This checkpoint has already been recorded. Continue to the next checkpoint.",
@@ -337,6 +413,7 @@ export async function learningModulePage(
         }
         scene?.focus(id);
         heldFeedback = null;
+        walkOverview = false;
         action(attemptPath() + "/inspect", { objectId: id });
       }
       const click = (event) => {
@@ -347,8 +424,39 @@ export async function learningModulePage(
           b.hasAttribute("data-retry-training")
         ) {
           heldFeedback = null;
-          action(`/training/${moduleKey}/start`, { acknowledged: true });
+          walkOverview = false;
+          action(`/training/${moduleKey}/start`, { acknowledged: true }).then(
+            () => {
+              if (!alive || !hunt) return;
+              const bar =
+                document.querySelector(".topbar")?.getBoundingClientRect()
+                  .height || 78;
+              const top =
+                wrap
+                  .querySelector("[data-activity-layout]")
+                  .getBoundingClientRect().top +
+                window.scrollY -
+                bar -
+                15;
+              window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+            },
+          );
           scene?.focus(c.objects[0].id);
+        } else if (b.hasAttribute("data-classify")) {
+          action(
+            attemptPath() + "/classify",
+            {
+              objectId: attempt.inspection.id,
+              flagged: b.dataset.classify === "hazard",
+            },
+            { feedback: true },
+          );
+        } else if (b.hasAttribute("data-walk-overview")) {
+          if (!busy) {
+            heldFeedback = null;
+            walkOverview = true;
+            render();
+          }
         } else if (b.hasAttribute("data-inspect-object"))
           inspect(b.dataset.inspectObject);
         else if (b.hasAttribute("data-focus-object")) {
@@ -396,8 +504,7 @@ export async function learningModulePage(
           }
         } else if (b.hasAttribute("data-look")) {
           const mode = b.dataset.look;
-          if (mode === "reset")
-            scene?.focus(attempt?.nextTask?.objectId || c.objects[0].id);
+          if (mode === "reset") scene?.focus(activeObject() || c.objects[0].id);
           else if (mode === "left" || mode === "right")
             scene?.rotate(mode === "left" ? 0.4 : -0.4);
           else scene?.zoom(mode === "in" ? -7 : 7);
@@ -427,11 +534,8 @@ export async function learningModulePage(
           warehouse.querySelector(".scene-loading")?.remove();
           try {
             scene = createScene(warehouse, c.objects, inspect);
-            scene.update(
-              attempt?.activityAnswers || [],
-              attempt?.nextTask?.objectId || c.objects[0].id,
-            );
-            scene.focus(attempt?.nextTask?.objectId || c.objects[0].id);
+            scene.update(sceneStates(), activeObject());
+            scene.focus(activeObject() || c.objects[0].id);
             scene.setVisible(
               !wrap.querySelector("[data-activity-layout]").hidden,
             );
@@ -444,7 +548,7 @@ export async function learningModulePage(
         if (!alive) return;
         sceneUnavailable = true;
         warehouse.dataset.sceneReady = "fallback";
-        warehouse.innerHTML = `<div class="scene-fallback">${icon(view.icon, 40)}<h3>Use the accessible scene checkpoints</h3><p>3D rendering is unavailable in this browser. The same five activity decisions, marking and quiz remain available using the Inspect buttons.</p><small>For 3D, try Chrome or Edge with hardware acceleration enabled.</small></div>`;
+        warehouse.innerHTML = `<div class="scene-fallback">${icon(view.icon, 40)}<h3>Use the accessible scene checkpoints</h3><p>3D rendering is unavailable in this browser. ${hunt ? "All eight area judgements, five hazard responses, marking and the quiz remain available using the Inspect buttons." : "The same five activity decisions, marking and quiz remain available using the Inspect buttons."}</p><small>For 3D, try Chrome or Edge with hardware acceleration enabled.</small></div>`;
         wrap
           .querySelectorAll("[data-look]")
           .forEach((b) => (b.disabled = true));

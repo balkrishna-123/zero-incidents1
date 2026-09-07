@@ -1,28 +1,33 @@
-# Install Working at Height — release 1.3
+# Final certificate update — release 1.5
 
-Use this update for the Zero Incident project you already run. It includes BOTH frontend and backend changes, plus the shared Manual Handling code.
+The requested prototype workflow is now complete: secure login → all three safety modules → verified completion → certificate PDF.
 
-1. Finish any active timed question, then stop the Node server with **Ctrl+C**.
-2. Back up your project, especially `.env`, `data/`, uploaded pictures and any custom code. **Do not delete them.**
-3. Copy/merge the extracted `public`, `server`, `tests` and `docs` folders, and `README.md`, `package.json` and `package-lock.json`, into:
+This update changes BOTH frontend and backend and adds PDF dependencies/fonts.
+
+1. Finish any active timed question. Stop your Node server with **Ctrl+C**.
+2. Back up the project, especially `.env`, `data/`, uploaded pictures and any custom source code. Do not delete them.
+3. Merge the extracted `public`, `server`, `tests` and `docs` folders plus `README.md`, `package.json` and `package-lock.json` into your existing folder:
 
    ```text
    D:\Zero-Incident-Admin-Auth\zero-incident\
    ```
 
-   This is the existing inner folder containing `package.json`. Replace matching code files; do not replace the entire project or create `public/public` / `server/server`. Merge your own custom edits where needed.
+   Include `server/assets/certificate-fonts`. Replace matching code files, but do not replace the whole project, `.env`, `data/` or your existing `public/assets` folder. Do not create `public/public` or `server/server`. Merge your own custom edits as needed.
 
-4. In that existing project folder run:
+4. In that existing folder run:
 
    ```powershell
    npm install
    npm start
    ```
 
-5. Open **http://localhost:3000**, press **Ctrl+F5**, sign in as an employee, and choose **Working at Height → Start training**.
+   **npm install is needed:** this release adds PDFKit and Fontkit.
 
-The patch does not contain `.env`, runtime data, uploads or the existing branding/trainer assets. No database reset is required. Existing accounts, credentials and Manual Handling history remain in the same database.
+5. Open **http://localhost:3000**, press **Ctrl+F5**, and sign in.
+6. After genuine passes of at least 70/100 in all three modules, open **Certificates**, review the recipient/results, choose **Generate my certificate**, then **Download PDF**.
 
-**Hazard Perception and final certificates are still pending.**
+Admins have a new Certificates page for viewing, issuing and downloading authorised completion records. Sample scores do not unlock issuance. Repeated generation returns the same saved certificate; later name/score changes do not rewrite it.
 
-See [docs/WORKING-AT-HEIGHT.md](docs/WORKING-AT-HEIGHT.md) for the lesson, scoring, controls, test commands and troubleshooting. This is a planning simulation, not permission or proof of competence to work at height; have the content reviewed against your site’s procedures before real training.
+The patch excludes active environment files, runtime data, uploads and existing branding/trainer assets. No database reset is needed; existing accounts and genuine results are retained.
+
+See [docs/CERTIFICATES.md](docs/CERTIFICATES.md) for evidence checks, snapshot policy, dates/fonts, troubleshooting and tests. The certificate records digital learning; it is not a licence or permission to perform hazardous work.

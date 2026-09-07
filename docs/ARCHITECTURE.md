@@ -19,7 +19,7 @@ The brief now covers Manual Handling, Working at Height and Hazard Perception. A
 - Plain HTML, CSS and browser JavaScript modules; no frontend framework or build step.
 - Express on Node.js, serving the frontend and JSON API on the same origin.
 - MongoDB through Mongoose.
-- Locally bundled Three.js for both procedural warehouse training scenes; no CDN or frontend build step.
+- Locally bundled Three.js for all three procedural warehouse training scenes; no CDN or frontend build step.
 - `express-session` and `connect-mongo` for server-side sessions.
 - Node crypto for salted scrypt password hashes.
 - Zod for request validation, Multer for bounded uploads, Sharp for image decoding/re-encoding.
@@ -100,7 +100,7 @@ Unique compound index: `(employeeId, moduleKey)`.
 
 Contains a 0–100 score, attempt count, assessment timestamp and `source` (`demo` or `assessment`). No record means **not started**; the API always builds a three-module view, including missing scores as `null`.
 
-Both released modules update this summary from validated completed attempts. Additional fields are `bestAttemptId`, `activityScore`, `quizScore`, `lastScore` and `lastAssessedAt`. A demonstration or unproven legacy score is replaced by the first genuine assessment; subsequent best scores can only improve.
+All three modules update this summary from validated completed attempts. Additional fields are `bestAttemptId`, `activityScore`, `quizScore`, `lastScore` and `lastAssessedAt`. A demonstration or unproven legacy score is replaced by the first genuine assessment; subsequent best scores can only improve.
 
 ### TrainingAttempt
 
@@ -199,7 +199,7 @@ Trainer multipart field `moduleKeys` is a JSON string array. Images must be stil
 | POST | `/api/training/attempts/:id/quiz/next` | Begin the next question without resetting an existing deadline |
 | POST | `/api/training/attempts/:id/quiz/answer` | Record an answer/skip or reconcile a timeout |
 
-All POSTs require the same CSRF protections as the existing app. Correct answers are not sent before the response/timeout; the private bank is outside `public/`. Requests cannot supply totals. Hazard Perception has no training endpoints yet. Module keys are explicitly restricted to the released courses. There is still no public admin sign-up, email-reset sender or certificate API.
+All POSTs require the same CSRF protections as the existing app. Correct answers are not sent before the response/timeout; the private bank is outside `public/`. Requests cannot supply totals. All three module keys are supported; unknown keys are rejected. Hazard Perception additionally uses the classification endpoint below. There is still no public admin sign-up or email-reset sender. Certificate APIs are described in the release 1.5 section below.
 
 ## 6. Scoring boundary
 
@@ -214,7 +214,7 @@ All POSTs require the same CSRF protections as the existing app. Correct answers
 
 Example: `[100, 100, 69]` has an average above 70 but remains **ineligible**. `[70, 70, 70]` is eligible. These boundaries are covered by integration checks.
 
-A progress value of 100% means all three modules passed, not merely that all were attempted. Eligibility does not mean a certificate was issued. No certificates are generated in this build.
+A progress value of 100% means all three modules passed, not merely that all were attempted. Eligibility does not mean a certificate was issued. Certificates are generated only from independently verified completed attempts; this raw mathematical eligibility flag alone is not sufficient.
 
 ## 7. Preview versus deployment
 
@@ -232,7 +232,7 @@ Rate limits in this prototype are process-local. Use a shared store and appropri
 
 The user selected a procedural interactive 3D warehouse and **70 activity / 30 quiz marks** per module. Manual Handling implements five 14-mark checkpoints and five 6-mark questions, with 20 seconds per question and a 70-point pass threshold. Best assessed results are kept; 85–100 earns three stars, 70–84 two, and below 70 one with a below-pass result. A trainer character presents the system’s feedback and cannot invent or override a score.
 
-Manual Handling and Working at Height are released; Hazard Perception and final certificates remain pending. The shared server state machine resolves questions and best-score writes using the stored attempt’s module key. Legacy Manual Handling records remain readable without a migration; the browser rejects a mismatched module/attempt URL. Open attempts, history and best scores are separate per employee/module. Remaining deployment decisions include safety-content sign-off, assessed-time accommodations, certificate format/expiry/verification, data retention and production operations. No practical competence or legal authorisation is implied by completing this prototype.
+All three modules and verified certificate generation are released. The shared server state machine resolves questions and best-score writes using the stored attempt’s module key. Legacy Manual Handling records remain readable without a migration; the browser rejects a mismatched module/attempt URL. Open attempts, history and best scores are separate per employee/module. Remaining deployment decisions include safety-content sign-off, assessed-time accommodations, certificate format/expiry/verification, data retention and production operations. No practical competence or legal authorisation is implied by completing this prototype.
 
 Attempt completion, Progress updates and audit logging are separate idempotent operations on the standalone development database. Result reads reconcile missing Progress updates. Production still needs monitoring, failure-injection/recovery testing and transactional/compensating handling of destructive cross-document races.
 
@@ -241,4 +241,30 @@ Attempt completion, Progress updates and audit logging are separate idempotent o
 
 The module page entry files load the shared `learning-module.js` controller with a released module key. `module-views.js` supplies the appropriate reading guide, presentation and lazy scene factory. The shared warehouse renderer retains the original Manual props and adds Height-specific equipment through a separate builder. Both support projected markers, object picking, keyboard look/zoom, non-WebGL Inspect controls, reduced-motion focus changes and explicit GPU/timer cleanup on navigation.
 
-There are still no climbing controls, practical competence checks or certificate issuer. Passing Working at Height is a record of the prototype knowledge/decision assessment, not equipment approval or permission to work.
+There are no climbing controls or practical competence checks. A digital learning completion certificate issuer is now available. Passing Working at Height is a record of the prototype knowledge/decision assessment, not equipment approval or permission to work.
+
+
+## 10. Hazard Perception 1.4 state and scoring
+
+Hazard Perception uses the same owned attempt/session boundary but a `hunt` activity mode. Inspection is free and can select any of eight areas. `POST /api/training/attempts/:id/classify` requires a prior inspection and accepts only `{ objectId, flagged: boolean }`. The first judgement is immutable and is marked against server-side course data. No correctness key is exposed before the judgement.
+
+New optional attempt fields are `classifications` and `selectedObjectId`; the activity-answer subdocument gains `identificationCorrect`. Legacy guided attempts do not use them. Each real hazard offers 7 identification and 7 control-response marks. Incorrect flags on the three comparison areas are recorded uniquely in `safeFindings`, deducting two activity marks once per area. Activity score is clamped to 0–70. All eight classifications and all five hazard responses are required before the quiz phase. Quiz scoring/deadlines are unchanged.
+
+The public attempt state includes only the selected observation, recorded judgements and the control prompt after classification. Completed results include the eight judgements and the five response/quiz breakdowns. A missed hazard can be explained and controlled for learning without regaining the lost identification marks. Renderer controls are demonstrations, not repair or site approval. Real uncertainty should always be reported; this exercise’s deduction must not discourage reporting.
+
+The shared warehouse uses time-based camera interpolation and static shadow maps refreshed after scene-state changes. Hazard markers are compact until hovered/focused/selected to prevent crowded labels covering one another. The two earlier course definitions/versions are checked against the delivered 1.3 source, and legacy result/timestamp fixtures remain valid.
+
+
+## 11. Verified completion and certificates (release 1.5)
+
+`completion.js` recomputes completed attempt scores from actual option IDs and the matching course version. It validates ownership, phase/open state, checkpoint/inspection sets, quiz sequence and timeout/skip flags; Hazard classifications and one-time deductions are also checked. Summary scores or `source` labels alone are not proof. The best valid completed attempt is selected per module. The completion date is the latest of the first verified pass dates across the three modules. Learner completion views now use this evidence-based status; existing admin progress reporting can still include labelled samples.
+
+`Certificate` has a unique `(employeeId, programVersion)` index and an immutable snapshot of identity, selected scores, timestamps, course versions and proof references. Issuance requires an active, ready employee, a reviewed recipient ID/summary key and the existing CSRF/auth guards. Repeated/concurrent requests return the same record. A raw PDF GET does not issue a record.
+
+Snapshot and evidence SHA-256 digests bind the stored record to its selected assessment data. Read/download checks validate those bindings. They are consistency checks, not public-key signatures or proof against an unrestricted database operator. Historical certificate validation does not recompute against a later edited question bank: it checks the evidence bound at issuance. New issuance still requires the supported matching course version.
+
+Authenticated endpoints: GET/POST `/api/me/certificate`, GET `/api/me/certificate/pdf`; administrator GET `/api/admin/certificates`, GET/POST `/api/admin/employees/:id/certificate` and GET `/api/admin/employees/:id/certificate/pdf`. There is no public PII lookup. The request body is `{recipientId, reviewKey}`; names/totals/dates/IDs supplied by the client are not accepted. A expected certificate ID can bind PDF downloads to the reviewed record.
+
+PDFKit and Fontkit generate a one-page A4 landscape document with locally embedded Noto Sans/Devanagari fonts. Unsupported glyphs are rejected before issuance. Dates store UTC instants plus the issuance display timezone (default Asia/Kathmandu). No human signature, accreditation or permission to perform hazardous work is implied.
+
+The new admin page provides search/filter/pagination, current verified summaries, issuance and historical PDF downloads. Inactive employees cannot access the app, but their historical records remain visible to admins; confirmed employee deletion also removes certificate data. Already downloaded copies cannot be recalled. Correction/reissue/revocation/expiry and public verification require an explicit organisational policy before adding them.

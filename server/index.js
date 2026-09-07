@@ -12,7 +12,7 @@ try {
     console.log(`Zero Incident is listening on 0.0.0.0:${port}`);
     console.log(
       demoMode
-        ? "DEVELOPMENT DEMO — seeded progress is illustrative. Manual Handling and Working at Height assessments are available."
+        ? "DEVELOPMENT DEMO — seeded progress is illustrative. All three module assessments are available. Verified completion certificates are available."
         : "Demo data is disabled.",
     );
   });

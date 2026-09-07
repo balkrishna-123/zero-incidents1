@@ -1,3 +1,4 @@
+import { HAZARD_COURSE } from "./hazard-content.js";
 // Assessment answers stay on the server. Only explicitly serialized fields are public.
 // Original scenarios informed by the linked HSE guidance; not site authorization.
 export const COURSE_VERSION = "warehouse-2026-v1";
@@ -26,6 +27,10 @@ export const REFERENCES = {
   warehouse: {
     title: "HSE · Warehousing and storage: Keep it safe",
     url: "https://www.hse.gov.uk/pubns/indg412.pdf",
+  },
+  fire: {
+    title: "GOV.UK · Clear escape routes",
+    url: "https://www.gov.uk/workplace-fire-safety-your-responsibilities/fire-safety-and-evacuation-plans",
   },
   traffic: {
     title: "HSE · Separating pedestrians and vehicles",
@@ -74,6 +79,7 @@ function question(id, prompt, choices, correct, explanation, reference) {
   };
 }
 export const COURSES = {
+  "hazard-perception": HAZARD_COURSE,
   "manual-handling": {
     key: "manual-handling",
     title: "Manual Handling",
@@ -540,6 +546,15 @@ export function courseOverview(key) {
     instructions: c.instructions,
     objects: c.objects,
     taskCount: c.tasks.length,
+    areaCount: c.objects.length,
+    ...(c.type === "hunt"
+      ? {
+          identificationMarks: 7,
+          responseMarks: 7,
+          falseFlagPenalty: 2,
+          requiresAllAreas: true,
+        }
+      : {}),
     references: c.references.map((k) => ({ key: k, ...REFERENCES[k] })),
     version: c.version || COURSE_VERSION,
     activityMax: 70,

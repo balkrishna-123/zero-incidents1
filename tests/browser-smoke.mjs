@@ -110,24 +110,26 @@ try {
     fullPage: true,
   });
   await learner.locator('[data-module="hazard-perception"]').click();
-  await expect(learner.locator(".modal-body")).toContainText("Preview only");
+  await expect(learner.locator("[data-training-module]")).toHaveAttribute(
+    "data-course",
+    "hazard-perception",
+  );
   await learner
-    .getByRole("button", { name: "Back to training hub", exact: true })
+    .getByRole("link", { name: "Back to training hub", exact: true })
     .click();
   await learner.getByRole("link", { name: "My progress", exact: true }).click();
   await expect(learner.locator(".detail-module")).toHaveCount(3);
   await learner
     .getByRole("link", { name: "Certificates", exact: true })
     .click();
-  await expect(learner.locator(".certificate-placeholder")).toContainText(
-    "PHASE 2",
-  );
+  await expect(learner.locator(".certificate-locked")).toContainText("0/3");
+  await expect(learner.locator("[data-issue-certificate]")).toHaveCount(0);
   await learner.goto(`${base}/#/admin/overview`);
   await expect(
     learner.getByRole("heading", { name: "Welcome, Samira." }),
   ).toBeVisible();
   console.log(
-    "PASS: mandatory password change → return to login → protected three-module hub, unreleased module overview and progress.",
+    "PASS: mandatory password change → return to login → protected three-module hub, Hazard Perception briefing and progress.",
   );
 
   await admin

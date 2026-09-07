@@ -183,16 +183,14 @@ try {
   });
   await page.reload();
   await expect(page.locator("body")).toHaveAttribute("data-theme", "dark");
-  await page.locator('[data-module="hazard-perception"]').click();
+  await page.locator(".sidebar [data-help]").click();
   assert.equal(
     await page
       .locator(".modal")
       .evaluate((el) => getComputedStyle(el).backgroundColor),
     "rgb(25, 26, 30)",
   );
-  await page
-    .getByRole("button", { name: "Back to training hub", exact: true })
-    .click();
+  await page.getByRole("button", { name: "Got it", exact: true }).click();
   await page.locator(".sidebar-profile [data-logout]").click();
   await expect(page.locator("#login-form")).toBeVisible();
   await expect(page.locator("body")).toHaveAttribute("data-theme", "login");

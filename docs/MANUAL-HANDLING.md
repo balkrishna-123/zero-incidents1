@@ -1,6 +1,12 @@
 # Manual Handling — playable module, release 1.2
 
-> **Current release: 1.3.** Working at Height is now also playable. Use [WORKING-AT-HEIGHT.md](WORKING-AT-HEIGHT.md) for the latest update instructions. This document retains the original Manual Handling curriculum and historical release details; its question/checkpoint IDs and existing results are preserved. The controller/renderer are now shared through `learning-module.js` and `warehouse-scene.js`.
+> **Current release: 1.5.** The verified completion and PDF certificate flow is implemented. Use [CERTIFICATES.md](CERTIFICATES.md) for the latest installation and record policy. The curriculum and original release details below are retained for reference; genuine existing results are preserved.
+
+
+> **Historical release note (1.4).** All three modules are now playable; certificate generation is next. Use [HAZARD-PERCEPTION.md](HAZARD-PERCEPTION.md) for the latest update. This document retains the original module curriculum/release details. Existing course definitions, versions and results are preserved.
+
+
+> **Historical release note (1.3).** Working at Height is now also playable. Use [WORKING-AT-HEIGHT.md](WORKING-AT-HEIGHT.md) for the latest update instructions. This document retains the original Manual Handling curriculum and historical release details; its question/checkpoint IDs and existing results are preserved. The controller/renderer are now shared through `learning-module.js` and `warehouse-scene.js`.
 
 **Released:** 6 September 2026  
 **Scope:** Manual Handling only. Working at Height and Hazard Perception still have their existing overviews; their assessments and the final certificate flow are not yet released.

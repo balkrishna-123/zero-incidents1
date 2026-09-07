@@ -2,7 +2,13 @@ import mongoose from "mongoose";
 import { MODULE_KEYS } from "./config.js";
 const { Schema, model } = mongoose;
 const activityAnswer = new Schema(
-  { taskId: String, optionId: String, correct: Boolean, answeredAt: Date },
+  {
+    taskId: String,
+    optionId: String,
+    correct: Boolean,
+    identificationCorrect: Boolean,
+    answeredAt: Date,
+  },
   { _id: false },
 );
 const quizAnswer = new Schema(
@@ -13,6 +19,10 @@ const quizAnswer = new Schema(
     timedOut: Boolean,
     answeredAt: Date,
   },
+  { _id: false },
+);
+const areaClassification = new Schema(
+  { objectId: String, flagged: Boolean, correct: Boolean, classifiedAt: Date },
   { _id: false },
 );
 const attemptSchema = new Schema(
@@ -33,6 +43,8 @@ const attemptSchema = new Schema(
     open: { type: Boolean, default: true },
     activityAnswers: { type: [activityAnswer], default: [] },
     inspected: { type: [String], default: [] },
+    classifications: { type: [areaClassification], default: [] },
+    selectedObjectId: { type: String, default: null },
     safeFindings: { type: [String], default: [] },
     selectedTaskId: { type: String, default: null },
     quizOrder: { type: [String], required: true },

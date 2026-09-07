@@ -105,7 +105,7 @@ try {
     "Start training",
   );
   await expect(page.locator('[data-module="hazard-perception"]')).toContainText(
-    "View module overview",
+    "Start training",
   );
   await page.locator('[data-module="working-at-height"]').click();
   await expect(page.locator("[data-warehouse]")).toHaveAttribute(

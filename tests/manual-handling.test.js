@@ -150,14 +150,14 @@ test(
         assert.equal(meta.trainer.nickname, "Yeti");
         assert.equal(JSON.stringify(meta).includes("correctId"), false);
         assert.equal(meta.course.questions, undefined);
-        await learner.get("/training/hazard-perception").expect(404);
+        await learner.get("/training/unsafe-acts").expect(404);
         await learner
-          .post("/training/hazard-perception/start", { acknowledged: true })
+          .post("/training/unsafe-acts/start", { acknowledged: true })
           .expect(404);
         const hub = (await learner.get("/me/training")).body;
         assert.equal(
           hub.modules.filter((m) => m.assessmentAvailable).length,
-          2,
+          3,
         );
         await learner
           .post("/training/manual-handling/start", { acknowledged: false })
@@ -397,7 +397,11 @@ test(
           (await learner.get("/training/manual-handling")).body.history.length,
           4,
         );
-        await learner.get("/me/certificate").expect(404);
+        const certificateState = (
+          await learner.get("/me/certificate").expect(200)
+        ).body;
+        assert.equal(certificateState.certificate, null);
+        await learner.get("/me/certificate/pdf").expect(409);
       },
     );
     await t.test(

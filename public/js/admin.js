@@ -40,9 +40,11 @@ function statCard(label, value, note, symbol, tone = "") {
 }
 async function showEmployee(ctx, id) {
   try {
-    const { employee: e, progress: p } = await ctx.api.get(
-      `/admin/employees/${id}`,
-    );
+    const {
+      employee: e,
+      progress: p,
+      completion,
+    } = await ctx.api.get(`/admin/employees/${id}`);
     modal({
       title: "Employee overview",
       subtitle: "Account details and learning progress",
@@ -51,8 +53,8 @@ async function showEmployee(ctx, id) {
       <div class="detail-header">${avatar(e, "avatar-lg")}<div><h3>${esc(fullName(e))}</h3><p>${esc(e.employeeNumber)} &nbsp;·&nbsp; ${esc(e.username)}</p></div><div style="margin-left:auto">${statusBadge(e.status)}</div></div>
       <dl class="detail-grid"><div><dt>AGE</dt><dd>${e.age} years</dd></div><div><dt>REGISTERED</dt><dd>${formatDate(e.createdAt)}</dd></div><div><dt>LAST SIGN-IN</dt><dd>${formatDate(e.lastLoginAt)}</dd></div><div><dt>PASSWORD SETUP</dt><dd>${e.mustChangePassword ? "Change required" : "Complete"}</dd></div><div><dt>MODULES PASSED</dt><dd>${p.passed} of 3</dd></div><div><dt>OVERALL SCORE</dt><dd>${p.overallScore === null ? "Awaiting all scores" : `${p.overallScore} / 100`}</dd></div></dl>
       <div class="section-title"><h2>Learning progress</h2>${progressBadge(p.status)}</div><div class="detail-modules">${p.modules.map((m) => `<div class="detail-module"><span class="module-small-icon">${icon(moduleMeta[m.key].icon)}</span><div><strong>${moduleMeta[m.key].short}</strong><small>${m.score === null ? "Not yet assessed" : `${m.classification} · ${m.attempts} attempt${m.attempts === 1 ? "" : "s"}`}</small></div>${scoreView(m)}</div>`).join("")}</div>
-      <div class="info-callout">${icon(p.eligible ? "award" : "info", 17)}<span>${p.eligible ? "All three modules meet the 70-point pass threshold. Certificate generation is part of Phase 2." : "Every module must reach 70/100 before this employee becomes eligible for certification."}${p.hasDemoScores ? "<br><strong>These scores are labelled demonstration records.</strong>" : ""}</span></div>`,
-      footer: `<button class="btn btn-secondary" data-close-modal>Close</button><a class="btn btn-primary" href="#/admin/employees/${e.id}/edit">${icon("edit", 14)}Edit account</a>`,
+      <div class="info-callout">${icon(p.eligible ? "award" : "info", 17)}<span>${p.eligible ? "The displayed scores meet the threshold. Only verified completed assessments count for the certificate." : "Every module must reach 70/100 before this employee becomes eligible for certification."}${p.hasDemoScores ? "<br><strong>These scores are labelled demonstration records.</strong>" : ""}</span></div>`,
+      footer: `<button class="btn btn-secondary" data-close-modal>Close</button><a class="btn btn-secondary" href="#/admin/certificates/${e.id}">${icon("award", 14)}Completion record</a><a class="btn btn-primary" href="#/admin/employees/${e.id}/edit">${icon("edit", 14)}Edit account</a>`,
     });
   } catch (e) {
     notify(e.message, "error");
@@ -369,7 +371,7 @@ async function trainersPage(ctx) {
   const data = await ctx.api.get("/admin/trainers");
   return {
     title: "Virtual trainers",
-    html: `${heading("Meet your safety guides.", "A friendly face for every learning journey. No login accounts needed.", `<a class="btn btn-primary" href="#/admin/trainers/new">${icon("plus", 16)}Create trainer</a>`)}<div class="scope-note">${icon("trainer", 17)}<span><strong>Characters, not user accounts.</strong> Trainers introduce module rules and present feedback. Manual Handling and Working at Height scores are calculated by the assessment system, not the trainer character. Hazard Perception will follow.</span></div><div class="section-title"><h2 id="trainer-count">${data.trainers.length} virtual trainer${data.trainers.length === 1 ? "" : "s"}</h2><div class="search-wrap">${icon("search")}<input type="search" id="trainer-search" placeholder="Find a trainer…" aria-label="Search trainers"></div></div><div class="trainer-grid" id="trainer-results">${trainerCards(data.trainers)}</div>`,
+    html: `${heading("Meet your safety guides.", "A friendly face for every learning journey. No login accounts needed.", `<a class="btn btn-primary" href="#/admin/trainers/new">${icon("plus", 16)}Create trainer</a>`)}<div class="scope-note">${icon("trainer", 17)}<span><strong>Characters, not user accounts.</strong> Trainers introduce module rules and present feedback. All three module scores are calculated by the assessment system, not the trainer character. Hazard Perception includes area judgements and control responses.</span></div><div class="section-title"><h2 id="trainer-count">${data.trainers.length} virtual trainer${data.trainers.length === 1 ? "" : "s"}</h2><div class="search-wrap">${icon("search")}<input type="search" id="trainer-search" placeholder="Find a trainer…" aria-label="Search trainers"></div></div><div class="trainer-grid" id="trainer-results">${trainerCards(data.trainers)}</div>`,
     mount(root) {
       const results = root.querySelector("#trainer-results");
       function bind() {
@@ -552,7 +554,7 @@ async function progressPage(ctx) {
   let rows = data.employees;
   return {
     title: "Learning progress",
-    html: `${heading("Every step toward safer work.", "See who’s progressing, who’s ready, and who needs a little support.", `<button class="btn btn-secondary" id="export-progress">${icon("download", 15)}Export CSV</button>`)}<div class="stat-grid">${statCard("Employees", rows.length, "Registered learners", "users")}${statCard("Training complete", rows.filter((e) => e.progress.eligible).length, "All three modules passed", "award", "green-icon")}${statCard("In progress", rows.filter((e) => e.progress.status === "in-progress").length, "Building safer habits", "chart")}${statCard("Need a retake", rows.filter((e) => e.progress.status === "retake").length, "At least one score below 70", "refresh", "amber-icon")}</div>${data.demoMode ? '<div class="scope-note">' + icon("info", 16) + "<span><strong>Demonstration records.</strong> Seeded scores illustrate progress reporting. New employee accounts start with no scores. Manual Handling and Working at Height now record real assessments. Hazard Perception and final certificates are coming next.</span></div>" : ""}<section class="panel"><div class="table-toolbar"><div class="search-wrap">${icon("search")}<input id="progress-search" type="search" placeholder="Search employees…" aria-label="Search learning progress"></div><select id="progress-filter" aria-label="Filter learning status" style="width:180px;min-height:36px;font-size:10px;padding-top:8px;padding-bottom:8px"><option value="">All learning statuses</option><option value="not-started">Not started</option><option value="in-progress">In progress</option><option value="retake">Retake needed</option><option value="complete">Training complete</option></select></div><div id="progress-results">${progressTable(rows)}</div><footer class="table-footer"><span id="progress-count">${rows.length} employees</span><span>Overall score appears after all 3 modules are assessed.</span></footer></section><div class="progress-legend"><span><i></i>Excellent · 85–100</span><span><i class="blue"></i>Pass · 70–84</span><span><i class="amber"></i>Retake · below 70</span><span><i class="gray"></i>Not assessed</span></div>`,
+    html: `${heading("Every step toward safer work.", "See who’s progressing, who’s ready, and who needs a little support.", `<button class="btn btn-secondary" id="export-progress">${icon("download", 15)}Export CSV</button>`)}<div class="stat-grid">${statCard("Employees", rows.length, "Registered learners", "users")}${statCard("Training complete", rows.filter((e) => e.progress.eligible).length, "All three modules passed", "award", "green-icon")}${statCard("In progress", rows.filter((e) => e.progress.status === "in-progress").length, "Building safer habits", "chart")}${statCard("Need a retake", rows.filter((e) => e.progress.status === "retake").length, "At least one score below 70", "refresh", "amber-icon")}</div>${data.demoMode ? '<div class="scope-note">' + icon("info", 16) + "<span><strong>Demonstration records.</strong> Seeded scores illustrate progress reporting. New employee accounts start with no scores. All three modules now record real assessments. Certificates are issued from verified completion records.</span></div>" : ""}<section class="panel"><div class="table-toolbar"><div class="search-wrap">${icon("search")}<input id="progress-search" type="search" placeholder="Search employees…" aria-label="Search learning progress"></div><select id="progress-filter" aria-label="Filter learning status" style="width:180px;min-height:36px;font-size:10px;padding-top:8px;padding-bottom:8px"><option value="">All learning statuses</option><option value="not-started">Not started</option><option value="in-progress">In progress</option><option value="retake">Retake needed</option><option value="complete">Training complete</option></select></div><div id="progress-results">${progressTable(rows)}</div><footer class="table-footer"><span id="progress-count">${rows.length} employees</span><span>Overall score appears after all 3 modules are assessed.</span></footer></section><div class="progress-legend"><span><i></i>Excellent · 85–100</span><span><i class="blue"></i>Pass · 70–84</span><span><i class="amber"></i>Retake · below 70</span><span><i class="gray"></i>Not assessed</span></div>`,
     mount(root) {
       const results = root.querySelector("#progress-results");
       function bind() {
@@ -637,6 +639,14 @@ export function settingsPage(ctx) {
   };
 }
 export async function adminPage(route, ctx) {
+  if (route === "/admin/certificates") {
+    const { adminCertificatesPage } = await import("./certificates.js");
+    return adminCertificatesPage(ctx);
+  }
+  if (/^\/admin\/certificates\/[a-fA-F0-9]{24}$/.test(route)) {
+    const { certificatePage } = await import("./certificates.js");
+    return certificatePage(ctx, route.split("/")[3]);
+  }
   if (route === "/admin/overview") return overview(ctx);
   if (route === "/admin/employees") return employeesPage(ctx);
   if (route === "/admin/employees/new") return employeeForm(ctx);

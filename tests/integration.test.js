@@ -205,7 +205,11 @@ test(
           response.body.modules.every(
             (m) =>
               m.assessmentAvailable ===
-              ["manual-handling", "working-at-height"].includes(m.key),
+              [
+                "manual-handling",
+                "working-at-height",
+                "hazard-perception",
+              ].includes(m.key),
           ),
           true,
         );

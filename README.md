@@ -1,24 +1,42 @@
 # ZERO INCIDENT
 ## A safer start, for everyone.
 
-**Release 1.3 — Admin/authentication + Manual Handling + Working at Height**  
+**Release 1.5 — Complete learning and certificate prototype**  
 Built for the Tech-Yeti safety-training project, using the supplied screens and the revised **three-module** scope.
 
-> **This is a working development prototype, not a completed three-module training product.** Account management, Manual Handling and Working at Height are implemented. Both playable modules have procedural 3D scenes, five scored checkpoints, five timed quiz questions, server-marked results, stars, history and retakes. Hazard Perception assessment and final certificates are still pending. Sample progress is labelled and is not real training evidence.
+> **This is a working development prototype, not a production training qualification.** Account management and all three modules are playable. Manual Handling and Working at Height have five guided checkpoints; Hazard Perception has a free-order eight-area safety walk, five hazard responses and three comparison areas. All modules have timed quizzes, server-marked results, stars, history and retakes. Verified completion summaries and downloadable PDF certificates are implemented. Sample progress is labelled and is not real training evidence.
 
 ---
 
-## Working at Height update — install this release
+## Final certificate update — install this release
 
-Follow **[docs/WORKING-AT-HEIGHT.md](docs/WORKING-AT-HEIGHT.md)** for the current Windows update, lesson content and test commands. The patch updates both frontend and backend while preserving your `.env`, database, trainer pictures and existing Manual Handling results.
+The requested prototype workflow is now complete: **secure onboarding → three safety modules → verified completion → PDF certificate**.
+
+For an existing installation, use **Zero-Incident-Certificate-Update.zip** and follow **[docs/CERTIFICATES.md](docs/CERTIFICATES.md)**. Preserve `.env`, `data/` and uploaded/branding assets. This update includes frontend/backend changes, PDFKit/Fontkit dependencies and bundled certificate fonts; run `npm install` before restarting Node.
+
+Employees open **Certificates**, review their verified results/name, generate one saved record, and download the PDF. The gate requires genuine completed assessments at **70/100 or higher in each of the three modules**. Sample totals, forged correctness flags or an overall average cannot bypass it. Admins can search, view, issue and download authorised completion records.
+
+Issued certificates keep the original name, best marks, dates and ID. Later practice or profile changes do not silently rewrite them. A linked-evidence consistency failure blocks the PDF for review. The certificate recognises digital learning, **not practical competence or permission to perform hazardous work**.
+
+## Hazard Perception — release 1.4 curriculum
+
+For the latest installation use the certificate guide above. **[docs/HAZARD-PERCEPTION.md](docs/HAZARD-PERCEPTION.md)** retains the Hazard curriculum and original release notes. The code-only patch preserves `.env`, the database, trainer pictures and earlier module results.
+
+The new safety walk requires eight area judgements and five hazard responses in any order. Each hazard offers **7 identification + 7 response marks**, totalling 70 activity marks. An incorrect flag on a clearly safe comparison area deducts two activity marks once. **Inspection is free**, and real or uncertain safety concerns should always be raised at work. Five timed quiz questions add 30 marks, with 20 seconds each; 70/100 passes and the genuine assessed best is kept.
+
+All three modules are now playable. **Certificate generation is now available** and requires genuine verified passes in every module, not merely an average or sample scores.
+
+## Working at Height — release 1.3 curriculum
+
+For the latest installation use the Hazard guide above. **[docs/WORKING-AT-HEIGHT.md](docs/WORKING-AT-HEIGHT.md)** retains the Height lesson and original release notes. The patch updates both frontend and backend while preserving your `.env`, database, trainer pictures and existing Manual Handling results.
 
 Working at Height adds a blue-themed maintenance zone covering ground-level alternatives, defective access equipment, edge protection, falling objects and competent work/rescue planning. It uses **70 activity + 30 quiz marks**, **20 seconds per question**, and the same **70/100** pass threshold. The learner remains at ground level; completing the simulation is not permission to climb or operate equipment.
 
-Both modules now share a tested controller and warehouse renderer, while their attempts, question banks and best scores remain separate. Hazard Perception and final certificates are next.
+Both modules now share a tested controller and warehouse renderer, while their attempts, question banks and best scores remain separate. Hazard Perception has now been added in release 1.4; final certificates are available in release 1.5.
 
 ## Manual Handling — release 1.2 curriculum
 
-**For the latest installation, use the Working at Height guide above.** [docs/MANUAL-HANDLING.md](docs/MANUAL-HANDLING.md) retains the Manual Handling lesson and original release notes. Do not install the older patch over release 1.3.
+**For the latest installation, use the certificate guide above.** [docs/MANUAL-HANDLING.md](docs/MANUAL-HANDLING.md) retains the Manual Handling lesson and original release notes. Do not install an older patch over release 1.5.
 
 The module covers **TILE risk assessment, planning the route, selecting a handling aid, a controlled move and setting down safely**. Each of five activity decisions earns up to 14 marks (70 total). Five quiz questions earn up to 6 marks each (30 total), with a server-enforced **20-second** deadline. **70/100 passes**; the best genuine assessed result is kept across retakes. Completing a real assessment replaces that module’s illustrative sample score, if present.
 
@@ -30,7 +48,7 @@ Use **Sign out** at the top right of the workspace. The top bar stays visible wh
 
 Use **Light mode / Dark mode** beside Sign out. Each role remembers its appearance in this browser; switching preserves unsaved form inputs. On small screens, use the sun/moon icon. The login page retains its light design.
 
-For the earlier theme-only patch, see [docs/UI-UPDATE.md](docs/UI-UPDATE.md). For the current two-module release, use **docs/WORKING-AT-HEIGHT.md** instead: it also updates the backend. Existing accounts, passwords and uploaded pictures are not replaced.
+For the earlier theme-only patch, see [docs/UI-UPDATE.md](docs/UI-UPDATE.md). For the current completed prototype, use **docs/CERTIFICATES.md** instead: it also updates the backend. Existing accounts, passwords and uploaded pictures are not replaced.
 
 ---
 
@@ -45,6 +63,7 @@ For the earlier theme-only patch, see [docs/UI-UPDATE.md](docs/UI-UPDATE.md). Fo
 - Reset temporary passwords and revoke existing sessions.
 - Permanently delete an employee and their progress, with an explicit username confirmation.
 - View per-module scores, completion status and certification eligibility; export the displayed progress to CSV.
+- Search verified completion records, issue a certificate for an eligible active employee, and download saved PDFs.
 - Edit the admin profile and username; change the admin password.
 
 ### Virtual trainers
@@ -60,8 +79,9 @@ For the earlier theme-only patch, see [docs/UI-UPDATE.md](docs/UI-UPDATE.md). Fo
 - Cannot access the hub or protected learning APIs until the temporary password is changed.
 - After choosing a new password, the session ends and the employee returns to login.
 - Sign in again to access the three-module training hub and virtual-trainer introductions.
-- Complete Manual Handling and Working at Height, resume open attempts, review results and retake while keeping a separate assessed best for each module.
-- View their own progress, profile, certificate eligibility and password settings.
+- Complete all three modules, resume open attempts, review results and retake while keeping a separate assessed best for each module.
+- View their own verified progress, completion summary, issued certificate, profile and password settings.
+- Generate and re-download an authenticated, one-page completion PDF after all three genuine passes.
 - Other employees’ data and every admin API remain inaccessible.
 
 ### Three modules only
@@ -230,7 +250,7 @@ There is no configured email service; the login-page password-help dialog direct
 
 Each of the three modules is equally weighted for the final average. The overall score remains unavailable until all three scores exist. **Every module must individually score at least 70** for certification eligibility; an average of 70 is insufficient if one module failed.
 
-Both released modules accept validated **activity and quiz responses**, not client-supplied totals. The server marks them and writes the best assessed result. Quiz deadlines survive reloads, replayed answers cannot earn more marks, and only the owner can access an attempt. There is still **no certificate-issuance API**; Hazard Perception will follow. Demonstration scores are not treated as genuine assessed best scores.
+All three modules accept validated **activity and quiz responses**, not client-supplied totals. The server marks them and writes the best assessed result. Quiz deadlines survive reloads, replayed answers cannot earn more marks, and only the owner can access an attempt. Certificate issuance recomputes the complete underlying evidence, rather than trusting a Progress total or source flag. It requires a reviewed recipient/summary, then creates one immutable programme record with bound evidence. Demonstration scores never qualify. See **docs/CERTIFICATES.md** for the API and snapshot policy.
 
 ---
 
@@ -241,6 +261,8 @@ Both released modules accept validated **activity and quiz responses**, not clie
 npm test
 npm run test:manual
 npm run test:height
+npm run test:hazard
+npm run test:certificate
 ```
 
 Tests use a separate disposable MongoDB database. They do not modify your running app database.
@@ -255,6 +277,8 @@ npm run test:browser
 npm run test:appearance
 npm run test:manual:browser
 npm run test:height:browser
+npm run test:hazard:browser
+npm run test:certificate:browser
 ```
 
 The browser script launches its own isolated test application and database, then closes them. It covers registration, account edits, deactivation, onboarding, the employee hub, trainer upload/deletion, progress export and mobile navigation. Screenshots are written to `data/browser-test-artifacts/`, not committed.
@@ -270,6 +294,7 @@ zero-incident/
 ├── public/
 │   ├── index.html              # App entry point
 │   ├── styles.css              # Shared light/dark workspace UI
+│   ├── certificates.css        # Verified completion, paper preview and admin records
 │   ├── training.css            # Shared learning UI; green Manual / blue Height
 │   ├── vendor/                 # Bundled Three.js and MIT licence
 │   ├── assets/                 # Local font, icons, supplied trainer character
@@ -282,6 +307,10 @@ zero-incident/
 │       ├── employee.js         # Three-module hub and employee views
 │       ├── manual-handling.js  # Manual Handling page entry
 │       ├── working-at-height.js # Working at Height page entry
+│       ├── certificates.js     # Employee/admin completion and PDF actions
+│       ├── hazard-perception.js # Hazard Perception page entry
+│       ├── hazard-walk.js      # Area judgement, progress and review panels
+│       ├── hazard-scene.js     # Hazard/comparison props and example controls
 │       ├── learning-module.js  # Shared briefing, activity, quiz, result/history
 │       ├── module-views.js     # Module-specific presentation and study guides
 │       ├── module-readings.js  # Original Manual Handling reading guide
@@ -298,7 +327,12 @@ zero-incident/
 │   ├── models.js               # User, Trainer, Module, Progress, Audit, Counter
 │   ├── training-models.js      # Owned attempts; optimistic concurrency
 │   ├── training.js             # Module-scoped marking, deadlines and history
-│   ├── training-content.js     # Fixed lesson and private assessment bank
+│   ├── training-content.js     # Course registry and private guided banks
+│   ├── completion.js           # Evidence validation and immutable issuance
+│   ├── certificate-model.js    # Unique programme certificate snapshots
+│   ├── certificate-pdf.js      # One-page PDF; embedded Latin/Devanagari fonts
+│   ├── assets/certificate-fonts/ # Licensed Noto fonts for PDF rendering
+│   ├── hazard-content.js       # Observations, response tasks and private quiz bank
 │   ├── passwords.js            # Hashing and password validation
 │   ├── seed.js                 # Module outlines and optional demo fixtures
 │   └── recover-admin.js        # Operator-only recovery
@@ -316,4 +350,11 @@ The Yeti/lady character was isolated from the screenshot supplied for this proje
 
 The uploaded SRS still says **six modules** in its product description, scope and evaluation sections. Update those to three and add the explicit admin / virtual-trainer requirements before sign-off. Employee age 16–100 follows the provided registration-screen convention; trainer age is optional because the trainer is a virtual character.
 
-**Next updates:** Hazard Perception, then the three-module final summary and certificate flow. Manual Handling and Working at Height are playable; the 3D warehouse is an original procedural scene using locally bundled Three.js (MIT). Safety content must be reviewed against local law and the company’s procedures by an appropriate safety reviewer before real use. The simulation does not authorise practical work.
+**Prototype milestone complete:** the account, three-module learning and certificate flows are implemented; the 3D warehouse is an original procedural scene using locally bundled Three.js (MIT). Safety content must be reviewed against local law and the company’s procedures by an appropriate safety reviewer before real use. The simulation does not authorise practical work.
+
+
+## Certificate record policy
+
+Only genuine, complete server-recorded attempts qualify. The certificate snapshot stores its recipient, selected marks, evidence references, programme completion date, issue date and unique ID. Repeated issuance clicks reuse the same record. Employee deactivation blocks employee downloads while preserving administrator access; confirmed deletion removes the stored certificate and attempts. Downloaded offline copies cannot be recalled.
+
+Dates default to `Asia/Kathmandu` and the zone is stored at issue. Optional `CERTIFICATE_TIME_ZONE` accepts another IANA zone for a future organisational deployment. PDFs support Latin and Devanagari names; unsupported glyphs are rejected before issuance. Certificate correction/revocation/reissue/expiry policies, public verification, additional-language fonts, production operations, practical training and formal safety/accessibility/security approval remain organisational/deployment work—not claims of this prototype.

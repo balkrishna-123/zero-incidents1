@@ -1561,3 +1561,308 @@ body[data-theme="dark"] .learning-module[data-course="working-at-height"] {
     padding: 14px;
   }
 }
+/* Hazard Perception: an amber, free-order safety walk. */
+.learning-module[data-course="hazard-perception"] {
+  --training-green: #96601b;
+  --training-soft: rgba(203, 150, 55, 0.1);
+  --hazard-ink: #90621f;
+}
+body[data-theme="dark"] .hazard-training {
+  --hazard-ink: #e9bf79;
+}
+.hazard-training .btn-primary:hover {
+  background: #7d4f15;
+  border-color: #7d4f15;
+}
+.hazard-training .training-module-icon,
+.hazard-training .lesson-eyebrow,
+.hazard-training .training-steps .is-current > span,
+.hazard-training .training-steps .is-done > span,
+.hazard-training .checkpoint button[data-inspect-object],
+.hazard-training .tile-grid article > span,
+.hazard-training .training-source:hover,
+.hazard-training .quiz-timer {
+  color: var(--hazard-ink);
+}
+.hazard-training .training-steps .is-current::after,
+.hazard-training .lesson-progress i,
+.hazard-training .quiz-time-track i {
+  background: #c7994d;
+}
+.hazard-training .training-choice:hover:not(:disabled),
+.hazard-training .checkpoint-current {
+  border-color: #c59b5b;
+}
+.hazard-training .training-choice:focus-visible {
+  outline-color: #c59b5b;
+}
+.hazard-training .training-ack input {
+  accent-color: #96601b;
+}
+.hazard-training .scene-pin.is-active:not(.is-complete):not(.is-reviewed) {
+  border-color: #b77d2e;
+  box-shadow:
+    0 0 0 4px #efba6532,
+    0 5px 18px #1d374536;
+}
+.hazard-training .scene-pin.is-active:not(.is-complete):not(.is-reviewed) span {
+  background: #96601b;
+  color: white;
+}
+.hazard-training .scene-pin.is-reviewed span {
+  background: #ac4436;
+  color: white;
+}
+.hazard-training .warehouse-frame {
+  border-color: #655641;
+  background: #3e3931;
+}
+.hazard-training .warehouse-topline {
+  background: #3e3931;
+}
+.hazard-training .warehouse-controls button {
+  background: #575042;
+  border-color: #807159;
+}
+.hazard-training .warehouse-controls button:hover {
+  background: #716148;
+}
+.hazard-training .quiz-timer.urgent {
+  color: #c96649;
+  background: #d86b4b20;
+}
+.hazard-training .checkpoint-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.hunt-area-status {
+  font-size: 8px;
+  color: var(--muted);
+  line-height: 1.6;
+  min-height: 26px;
+  flex-basis: 100%;
+}
+.hunt-meters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--border);
+  background: var(--training-soft);
+  border-radius: 8px;
+  padding: 18px 12px;
+  margin: 22px 0;
+}
+.hunt-meters > div {
+  text-align: center;
+  border-right: 1px solid var(--border);
+}
+.hunt-meters > div:last-child {
+  border: 0;
+}
+.hunt-meters strong {
+  display: block;
+  font-size: 30px;
+  line-height: 1.2;
+  color: var(--text);
+  letter-spacing: -0.9px;
+}
+.hunt-meters strong small {
+  font-size: 14px;
+  color: var(--muted);
+  letter-spacing: 0;
+  margin-left: 2px;
+}
+.hunt-meters span {
+  display: block;
+  font-size: 8px;
+  color: var(--muted);
+  margin-top: 7px;
+}
+.hunt-score-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-left: 2px solid #c49b50;
+  padding: 12px;
+  margin: 19px 0;
+  background: var(--training-soft);
+}
+.hunt-score-note > .icon {
+  color: var(--hazard-ink);
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+.lesson-panel .hunt-score-note p {
+  margin: 0;
+  font-size: 11px;
+}
+.hunt-breakdown {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 13px;
+  margin: 19px 0;
+}
+.hunt-breakdown > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.hunt-breakdown strong {
+  color: var(--text);
+  font-size: 12px;
+}
+.hunt-breakdown strong small {
+  font-size: 9px;
+  font-weight: 400;
+  margin-left: 2px;
+  color: var(--muted);
+}
+.hunt-back {
+  border: none;
+  background: none;
+  padding: 0 0 18px;
+  text-align: left;
+  font: inherit;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.hunt-back:hover {
+  color: var(--text);
+}
+.hunt-observation {
+  border: 1px solid var(--border);
+  background: var(--training-soft);
+  border-radius: 8px;
+  padding: 13px;
+  margin: 18px 0;
+}
+.hunt-observation > strong {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--hazard-ink);
+  margin-bottom: 8px;
+}
+.lesson-panel .hunt-observation p {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.8;
+  margin: 0;
+}
+.hunt-question {
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 18px 0 12px;
+}
+.hazard-training .training-choice > div > strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 550;
+}
+.hazard-training .training-choice > div > small {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  line-height: 1.7;
+}
+.hunt-identification {
+  border-left: 2px solid #31a48b;
+  background: #15a2870c;
+  padding: 12px 13px;
+  font-size: 11px;
+  color: var(--text);
+  margin: 16px 0;
+}
+.hunt-identification small {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.7;
+}
+.hunt-identification.missed {
+  border-left-color: #c39845;
+  background: var(--training-soft);
+}
+.hunt-point-split {
+  font-size: 10px;
+  color: var(--muted);
+  padding: 0 0 17px;
+}
+.hazard-primer-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.hunt-reporting-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 17px;
+  background: var(--training-soft);
+  margin-top: 24px;
+}
+.hunt-reporting-note > .icon {
+  flex-shrink: 0;
+  color: var(--hazard-ink);
+  margin-top: 3px;
+}
+.hunt-reporting-note strong {
+  font-size: 12px;
+}
+.hunt-reporting-note p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.8;
+}
+.hunt-inspection-review {
+  margin-bottom: 25px;
+}
+.hunt-inspection-review h3 {
+  font-size: 12px;
+  margin: 0 0 8px;
+}
+.hunt-inspection-review > p.lesson-small {
+  margin: 0 0 14px;
+}
+.hazard-training .training-coach > div {
+  min-width: 0;
+}
+.hazard-training .training-coach strong {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .hazard-training .checkpoint-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hazard-primer-grid {
+    grid-template-columns: 1fr;
+  }
+  .hunt-reporting-note {
+    padding: 14px;
+  }
+  .hunt-area-status {
+    font-size: 8px;
+  }
+}
+
+/* Compact numbered hunt markers prevent labels on nearby areas covering each other. */
+.hazard-training .scene-pin:not(:hover):not(:focus-visible):not(.is-active) {
+  padding: 7px;
+}
+.hazard-training
+  .scene-pin:not(:hover):not(:focus-visible):not(.is-active)
+  strong {
+  display: none;
+}
+.hazard-training .scene-pin:hover,
+.hazard-training .scene-pin:focus-visible,
+.hazard-training .scene-pin.is-active {
+  z-index: 3;
+}

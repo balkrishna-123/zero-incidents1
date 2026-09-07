@@ -1,4 +1,5 @@
 import express from "express";
+import { completionStatus } from "./completion.js";
 import mongoose from "mongoose";
 import { randomInt } from "node:crypto";
 import { z } from "zod";
@@ -30,17 +31,44 @@ const shuffled = (items) => {
   }
   return out;
 };
-export function calculateResult(a) {
-  const activityScore = Math.min(
-    70,
-    Math.max(0, a.activityAnswers.filter((x) => x.correct).length * 14),
+export function activityBreakdown(a) {
+  if (a.moduleKey !== "hazard-perception") {
+    return {
+      activityScore: Math.min(
+        70,
+        Math.max(0, a.activityAnswers.filter((x) => x.correct).length * 14),
+      ),
+    };
+  }
+  const identificationScore = Math.min(
+    35,
+    (a.classifications || []).filter((x) => x.correct && x.flagged).length * 7,
   );
+  const responseScore = Math.min(
+    35,
+    a.activityAnswers.filter((x) => x.correct).length * 7,
+  );
+  const falseFlagPenalty = Math.min(6, new Set(a.safeFindings || []).size * 2);
+  return {
+    identificationScore,
+    responseScore,
+    falseFlagPenalty,
+    activityScore: Math.max(
+      0,
+      Math.min(70, identificationScore + responseScore - falseFlagPenalty),
+    ),
+  };
+}
+export function calculateResult(a) {
+  const breakdown = activityBreakdown(a);
+  const { activityScore } = breakdown;
   const quizScore = Math.min(
     30,
     a.quizAnswers.filter((x) => x.correct).length * 6,
   );
   const score = activityScore + quizScore;
   const isHeight = a.moduleKey === "working-at-height";
+  const isHazard = a.moduleKey === "hazard-perception";
   return {
     activityScore,
     quizScore,
@@ -48,8 +76,14 @@ export function calculateResult(a) {
     passed: score >= 70,
     stars: score >= 85 ? 3 : score >= 70 ? 2 : 1,
     classification: score >= 85 ? "Excellent" : score >= 70 ? "Pass" : "Retake",
-    feedback:
-      score >= 85
+    ...(isHazard ? { activityBreakdown: breakdown } : {}),
+    feedback: isHazard
+      ? score >= 85
+        ? "Excellent awareness in this safety walk. Keep observing conditions, using suitable controls and reporting uncertain risks through your site’s procedures. A simulation result is not a workplace safety approval."
+        : score >= 70
+          ? "You passed this module. Review the areas you misclassified or the controls you missed. In real work, always raise an uncertain concern rather than protecting a score."
+          : "This attempt needs a retake. Review your observations and safer responses, then repeat the untimed walk. Inspecting is free: take time to understand the condition before judging it."
+      : score >= 85
         ? isHeight
           ? "Excellent planning decisions. Keep applying the avoid, prevent and minimise hierarchy. This result does not authorise work at height; training, supervision and a site-specific plan still matter."
           : "Excellent work. You made consistently safer decisions in this scenario. Keep applying the assessment-first approach and your workplace procedures."
@@ -66,8 +100,23 @@ const taskFeedback = (answer, course) => {
     kind: "activity",
     id: t.id,
     title: t.title,
-    correct: answer.correct,
-    points: answer.correct ? 14 : 0,
+    correct:
+      course.type === "hunt"
+        ? Boolean(answer.correct && answer.identificationCorrect)
+        : answer.correct,
+    points:
+      course.type === "hunt"
+        ? (answer.correct ? 7 : 0) + (answer.identificationCorrect ? 7 : 0)
+        : answer.correct
+          ? 14
+          : 0,
+    ...(course.type === "hunt"
+      ? {
+          identificationPoints: answer.identificationCorrect ? 7 : 0,
+          responsePoints: answer.correct ? 7 : 0,
+          maxPoints: 14,
+        }
+      : {}),
     selected: t.options.find((o) => o.id === answer.optionId)?.text,
     correctAnswer: t.options.find((o) => o.id === t.correctId).text,
     explanation: t.explanation,
@@ -89,6 +138,60 @@ const quizFeedback = (answer, course) => {
     reference: REFERENCES[q.reference],
   };
 };
+function classificationFeedback(entry, course) {
+  const object = course.objects.find((o) => o.id === entry.objectId);
+  const area = course.areas[entry.objectId];
+  const isHazard = course.tasks.some((t) => t.objectId === entry.objectId);
+  return {
+    kind: "classification",
+    id: entry.objectId,
+    title: object.label,
+    correct: entry.correct,
+    isHazard,
+    points: isHazard ? (entry.correct ? 7 : 0) : entry.correct ? 0 : -2,
+    maxPoints: isHazard ? 7 : 0,
+    selected: entry.flagged ? "Hazard — needs action" : "No hazard shown here",
+    correctAnswer: isHazard
+      ? "Hazard — needs a suitable control"
+      : "No hazard represented at this comparison area",
+    explanation:
+      area.feedback +
+      (!isHazard && !entry.correct
+        ? " The two-mark deduction applies only to this clearly depicted comparison. In real work, report uncertain concerns and seek advice."
+        : ""),
+    reference: REFERENCES[area.reference],
+  };
+}
+function finishActivityIfComplete(a, course) {
+  const responsesDone = a.activityAnswers.length === course.tasks.length;
+  const areasDone =
+    course.type !== "hunt" ||
+    (a.classifications || []).length === course.objects.length;
+  if (responsesDone && areasDone) a.phase = "quiz-ready";
+}
+function safeInspection(a, course) {
+  if (course.type !== "hunt" || !a.selectedObjectId) return null;
+  const object = course.objects.find((o) => o.id === a.selectedObjectId);
+  if (!object) return null;
+  const entry = (a.classifications || []).find((x) => x.objectId === object.id);
+  const task = course.tasks.find((t) => t.objectId === object.id);
+  const answer = task && a.activityAnswers.find((x) => x.taskId === task.id);
+  return {
+    id: object.id,
+    label: object.label,
+    observation: course.areas[object.id].observation,
+    classification: entry
+      ? {
+          flagged: entry.flagged,
+          correct: entry.correct,
+          isHazard: Boolean(task),
+          feedback: classificationFeedback(entry, course),
+        }
+      : null,
+    controlDone: Boolean(answer),
+    controlFeedback: answer ? taskFeedback(answer, course) : null,
+  };
+}
 function finishIfComplete(a) {
   if (a.quizAnswers.length !== 5) return;
   const score = calculateResult(a);
@@ -188,7 +291,8 @@ async function saveBest(a) {
 }
 function safeAttempt(a) {
   const course = getCourse(a.moduleKey);
-  const nextTask = course.tasks[a.activityAnswers.length];
+  const hunt = course.type === "hunt";
+  const nextTask = hunt ? null : course.tasks[a.activityAnswers.length];
   const selected = course.tasks.find((t) => t.id === a.selectedTaskId);
   let currentQuestion = null;
   if (a.phase === "quiz") {
@@ -208,7 +312,10 @@ function safeAttempt(a) {
   const answers = a.activityAnswers.map((x) => ({
     taskId: x.taskId,
     objectId: course.tasks.find((t) => t.id === x.taskId).objectId,
-    correct: x.correct,
+    correct: hunt ? Boolean(x.correct && x.identificationCorrect) : x.correct,
+    ...(hunt
+      ? { points: (x.correct ? 7 : 0) + (x.identificationCorrect ? 7 : 0) }
+      : {}),
   }));
   return {
     id: String(a._id),
@@ -218,6 +325,22 @@ function safeAttempt(a) {
     completedAt: a.completedAt,
     activityAnswers: answers,
     activityDone: answers.length,
+    activityScore: activityBreakdown(a).activityScore,
+    ...(hunt
+      ? {
+          inspection: safeInspection(a, course),
+          areasReviewed: (a.classifications || []).length,
+          areaCount: course.objects.length,
+          falseFlagCount: (a.safeFindings || []).length,
+          activityBreakdown: activityBreakdown(a),
+          classifications: (a.classifications || []).map((x) => ({
+            objectId: x.objectId,
+            flagged: x.flagged,
+            correct: x.correct,
+            isHazard: course.tasks.some((t) => t.objectId === x.objectId),
+          })),
+        }
+      : {}),
     nextTask: nextTask
       ? {
           id: nextTask.id,
@@ -229,7 +352,11 @@ function safeAttempt(a) {
     task:
       a.phase === "activity" &&
       selected &&
-      selected.id === nextTask?.id &&
+      (hunt
+        ? (a.classifications || []).some(
+            (x) => x.objectId === selected.objectId,
+          ) && !a.activityAnswers.some((x) => x.taskId === selected.id)
+        : selected.id === nextTask?.id) &&
       a.inspected.includes(selected.objectId)
         ? {
             id: selected.id,
@@ -252,6 +379,13 @@ function safeAttempt(a) {
       a.phase === "completed"
         ? {
             ...calculateResult(a),
+            ...(hunt
+              ? {
+                  inspectionReview: (a.classifications || []).map((x) =>
+                    classificationFeedback(x, course),
+                  ),
+                }
+              : {}),
             review: [
               ...a.activityAnswers.map((answer) =>
                 taskFeedback(answer, course),
@@ -287,6 +421,9 @@ async function changeAttempt(req, operation = () => ({})) {
           best?.source === "assessment" && best.bestAttemptId
             ? best.score
             : null,
+        ...(a.phase === "completed"
+          ? { completion: await completionStatus(req.user) }
+          : {}),
         serverNow: Date.now(),
         ...extra,
       };
@@ -416,6 +553,15 @@ export function createTrainingRouter() {
       await changeAttempt(req, (a, course) => {
         if (a.phase !== "activity")
           fail(409, "The practical activity is already complete.");
+        if (course.type === "hunt") {
+          if (!course.objects.some((o) => o.id === objectId))
+            fail(404, "Area not found.");
+          a.selectedObjectId = objectId;
+          a.selectedTaskId =
+            course.tasks.find((t) => t.objectId === objectId)?.id || null;
+          if (!a.inspected.includes(objectId)) a.inspected.push(objectId);
+          return {};
+        }
         const task = course.tasks[a.activityAnswers.length];
         if (task.objectId !== objectId)
           fail(
@@ -425,6 +571,43 @@ export function createTrainingRouter() {
         if (!a.inspected.includes(objectId)) a.inspected.push(objectId);
         a.selectedTaskId = task.id;
         return {};
+      }),
+    );
+  });
+  router.post("/attempts/:id/classify", async (req, res) => {
+    const input = z
+      .object({ objectId: z.string().min(1).max(40), flagged: z.boolean() })
+      .strict()
+      .parse(req.body);
+    res.json(
+      await changeAttempt(req, (a, course) => {
+        if (course.type !== "hunt")
+          fail(409, "Area classification belongs to Hazard Perception only.");
+        const recorded = (a.classifications || []).find(
+          (x) => x.objectId === input.objectId,
+        );
+        if (recorded)
+          return { feedback: classificationFeedback(recorded, course) };
+        if (a.phase !== "activity")
+          fail(409, "The safety walk is no longer accepting decisions.");
+        if (!course.objects.some((o) => o.id === input.objectId))
+          fail(404, "Area not found.");
+        if (!a.inspected.includes(input.objectId))
+          fail(409, "Inspect this area before classifying it.");
+        const task = course.tasks.find((t) => t.objectId === input.objectId);
+        const entry = {
+          objectId: input.objectId,
+          flagged: input.flagged,
+          correct: input.flagged === Boolean(task),
+          classifiedAt: new Date(),
+        };
+        a.classifications.push(entry);
+        if (input.flagged && !task && !a.safeFindings.includes(input.objectId))
+          a.safeFindings.push(input.objectId);
+        a.selectedObjectId = input.objectId;
+        a.selectedTaskId = task?.id || null;
+        finishActivityIfComplete(a, course);
+        return { feedback: classificationFeedback(entry, course) };
       }),
     );
   });
@@ -444,7 +627,16 @@ export function createTrainingRouter() {
         if (recorded) return { feedback: taskFeedback(recorded, course) };
         if (a.phase !== "activity")
           fail(409, "This activity is no longer accepting responses.");
-        const task = course.tasks[a.activityAnswers.length];
+        const hunt = course.type === "hunt";
+        const task = hunt
+          ? course.tasks.find((t) => t.id === input.taskId)
+          : course.tasks[a.activityAnswers.length];
+        if (!task) fail(404, "Hazard response not found.");
+        const identification = hunt
+          ? a.classifications.find((x) => x.objectId === task.objectId)
+          : null;
+        if (hunt && !identification)
+          fail(409, "Classify the area before choosing a control.");
         if (input.taskId !== task.id || !a.inspected.includes(task.objectId))
           fail(409, "Inspect the current checkpoint before answering.");
         if (!task.options.some((o) => o.id === input.optionId))
@@ -453,12 +645,17 @@ export function createTrainingRouter() {
           taskId: task.id,
           optionId: input.optionId,
           correct: input.optionId === task.correctId,
+          ...(hunt
+            ? {
+                identificationCorrect:
+                  identification.correct && identification.flagged,
+              }
+            : {}),
           answeredAt: new Date(),
         };
         a.activityAnswers.push(answer);
         a.selectedTaskId = null;
-        if (a.activityAnswers.length === course.tasks.length)
-          a.phase = "quiz-ready";
+        finishActivityIfComplete(a, course);
         return { feedback: taskFeedback(answer, course) };
       }),
     );
@@ -476,7 +673,9 @@ export function createTrainingRouter() {
         if (!["quiz-ready", "feedback"].includes(a.phase))
           fail(
             409,
-            "Finish all five practical checkpoints before starting the quiz.",
+            course.type === "hunt"
+              ? "Review all eight areas and respond to all five hazards before starting the quiz."
+              : "Finish all five practical checkpoints before starting the quiz.",
           );
         a.phase = "quiz";
         a.questionStartedAt = new Date();

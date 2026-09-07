@@ -117,9 +117,9 @@ function help() {
     <p>${admin ? "Everything you need to get a new employee ready for safety training." : "Your administrator provides your account. You set your own password and follow your training journey."}</p>
     <div class="help-steps">
       <div class="help-step"><span>1</span><div><strong>${admin ? "Register an employee" : "Make your account yours"}</strong><p>${admin ? "Create a username and temporary password. Share the credentials through a secure channel; they are shown only once." : "Use your temporary credentials, set a new password, then sign in again. Never share your password."}</p></div></div>
-      <div class="help-step"><span>2</span><div><strong>${admin ? "Meet your virtual trainers" : "Explore your three modules"}</strong><p>${admin ? "Create a character profile, upload an image and assign modules. Virtual trainers do not sign in or hold passwords." : "Manual Handling and Working at Height now include interactive 3D activities and timed quizzes. Hazard Perception remains an overview until the next update."}</p></div></div>
-      <div class="help-step"><span>3</span><div><strong>${admin ? "Keep track of progress" : "Work toward completion"}</strong><p>Every module must score at least 70 out of 100. An overall average cannot compensate for a failed module. Certification is planned for Phase 2.</p></div></div>
-    </div><div class="info-callout mt-24">${icon("info", 17)}<span>This phase implements accounts, security, trainer profiles and progress viewing. Demo scores are sample records, not the result of completed assessments.</span></div>`,
+      <div class="help-step"><span>2</span><div><strong>${admin ? "Meet your virtual trainers" : "Explore your three modules"}</strong><p>${admin ? "Create a character profile, upload an image and assign modules. Virtual trainers do not sign in or hold passwords." : "All three modules include interactive 3D activities and timed quizzes. Hazard Perception adds an eight-area safety walk with classification and response decisions."}</p></div></div>
+      <div class="help-step"><span>3</span><div><strong>${admin ? "Keep track of progress" : "Work toward completion"}</strong><p>Every module must score at least 70 out of 100. An overall average cannot compensate for a failed module. A certificate requires genuine verified passes in all three modules. Sample scores do not count.</p></div></div>
+    </div><div class="info-callout mt-24">${icon("info", 17)}<span>The learning flow now includes accounts, all three modules, verified completion and PDF certificates. Demo progress is illustrative, not evidence of completed assessments.</span></div>`,
     footer: '<button class="btn btn-primary" data-close-modal>Got it</button>',
   });
 }
@@ -145,6 +145,7 @@ function shell(page, route) {
         ["employees", "Manage employees", "users"],
         ["trainers", "Virtual trainers", "trainer"],
         ["progress", "Learning progress", "chart"],
+        ["certificates", "Certificates", "award"],
       ]
     : [
         ["hub", "Training hub", "grid"],
@@ -185,7 +186,7 @@ function shell(page, route) {
           <button type="button" class="btn btn-secondary topbar-signout" data-logout data-topbar-logout aria-label="Sign out" title="Sign out of Zero Incident">${icon("logout", 15)}<span>Sign out</span></button>
         </div>
       </header>
-      <main class="workspace-content" id="main-content">${page.html}<footer class="page-footer"><span>${icon("shield")}Zero incidents. Zero excuses.</span><span>Zero Incident &nbsp;·&nbsp; ${state.demoMode ? "Development demo" : "Safety workspace"} &nbsp;·&nbsp; v1.3</span></footer></main>
+      <main class="workspace-content" id="main-content">${page.html}<footer class="page-footer"><span>${icon("shield")}Zero incidents. Zero excuses.</span><span>Zero Incident &nbsp;·&nbsp; ${state.demoMode ? "Development demo" : "Safety workspace"} &nbsp;·&nbsp; v1.5</span></footer></main>
     </div>
   </div>`;
 }

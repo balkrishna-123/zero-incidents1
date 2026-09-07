@@ -21,6 +21,9 @@ export function createWarehouseScene(host, objects, onInspect, options) {
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.shadowMap.enabled = true;
+  // Geometry changes only after a decision; looking around does not need new shadows.
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -436,14 +439,16 @@ export function createWarehouseScene(host, objects, onInspect, options) {
     if (destroyed || !visible) return;
     frame = requestAnimationFrame(render);
     if (now - lastFrame < 30) return;
+    const smoothing =
+      1 - Math.exp(-7.5 * Math.min((now - lastFrame) / 1000, 0.2));
     lastFrame = now;
     if (goal) {
       const diff = Math.atan2(
         Math.sin(goal.yaw - yaw),
         Math.cos(goal.yaw - yaw),
       );
-      yaw += diff * 0.14;
-      pitch += (goal.pitch - pitch) * 0.14;
+      yaw += diff * smoothing;
+      pitch += (goal.pitch - pitch) * smoothing;
       if (Math.abs(diff) < 0.001 && Math.abs(goal.pitch - pitch) < 0.001)
         goal = null;
     }
@@ -492,6 +497,7 @@ export function createWarehouseScene(host, objects, onInspect, options) {
       camera.updateProjectionMatrix();
     },
     update(answers = [], active = objects[0].id) {
+      renderer.shadowMap.needsUpdate = true;
       host.dataset.resolvedCount = answers.length;
       for (const [id, t] of targets) {
         const answer = answers.find((a) => a.objectId === id);

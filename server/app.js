@@ -32,6 +32,14 @@ import {
 import { hashPassword, verifyPassword, passwordProblem } from "./passwords.js";
 
 import { AVAILABLE_MODULE_KEYS } from "./training-content.js";
+import { Certificate } from "./certificate-model.js";
+import {
+  completionStatus,
+  issueCertificate,
+  downloadableCertificate,
+  administrativeCompletions,
+} from "./completion.js";
+import { renderCertificatePDF } from "./certificate-pdf.js";
 import { TrainingAttempt } from "./training-models.js";
 import { createTrainingRouter, activeTraining } from "./training.js";
 
@@ -298,7 +306,7 @@ async function moduleViews() {
 }
 
 export async function createApp(mongoUrl) {
-  await TrainingAttempt.init();
+  await Promise.all([TrainingAttempt.init(), Certificate.init()]);
   await mkdir(UPLOAD_DIR, { recursive: true });
   const app = express();
   app.disable("x-powered-by");
@@ -383,7 +391,7 @@ export async function createApp(mongoUrl) {
   api.get("/health", (req, res) =>
     res.json({
       status: mongoose.connection.readyState === 1 ? "ok" : "unavailable",
-      phase: "manual-handling-and-working-at-height",
+      phase: "complete-learning-and-certificate-flow",
     }),
   );
   api.get("/session", async (req, res) => {
@@ -584,13 +592,103 @@ export async function createApp(mongoUrl) {
       modules: await moduleViews(),
       progress: progressSummary(rows),
       activeTraining: await activeTraining(req.user._id),
+      completion: await completionStatus(req.user, { progress: rows }),
     });
   });
+
+  const employeeCertificateOnly = (req, res, next) => {
+    if (req.user.role !== "employee")
+      return next(
+        Object.assign(new Error("This endpoint is for employees."), {
+          status: 403,
+        }),
+      );
+    next();
+  };
+  const certificateRequest = z
+    .object({
+      recipientId: z.string().regex(/^[a-fA-F0-9]{24}$/),
+      reviewKey: z.string().regex(/^[a-f0-9]{64}$/),
+    })
+    .strict();
+  const sendCertificate = async (res, employeeId, expectedId) => {
+    const record = await downloadableCertificate(employeeId);
+    if (expectedId && expectedId !== record.certificateId)
+      fail(
+        409,
+        "The certificate changed or the signed-in account is different. Refresh the completion page.",
+        "CERTIFICATE_ID_CHANGED",
+      );
+    const pdf = await renderCertificatePDF(record);
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="Zero-Incident-${record.certificateId}.pdf"`,
+      "Cache-Control": "no-store",
+    });
+    res.send(pdf);
+  };
+  api.get(
+    "/me/certificate",
+    requireAuth,
+    requireReady,
+    employeeCertificateOnly,
+    async (req, res) => res.json(await completionStatus(req.user)),
+  );
+  api.post(
+    "/me/certificate",
+    requireAuth,
+    requireReady,
+    employeeCertificateOnly,
+    async (req, res) => {
+      const input = certificateRequest.parse(req.body);
+      if (input.recipientId !== String(req.user._id))
+        fail(403, "This certificate request is for a different account.");
+      const result = await issueCertificate(
+        req.user._id,
+        req.user,
+        input.reviewKey,
+      );
+      res.status(result.created ? 201 : 200).json(result.completion);
+    },
+  );
+  api.get(
+    "/me/certificate/pdf",
+    requireAuth,
+    requireReady,
+    employeeCertificateOnly,
+    async (req, res) =>
+      sendCertificate(res, req.user._id, req.query.certificateId),
+  );
 
   api.use("/training", requireAuth, requireReady, createTrainingRouter());
 
   const admin = express.Router();
   api.use("/admin", requireAuth, requireReady, requireAdmin, admin);
+  admin.get("/certificates", async (req, res) =>
+    res.json({ records: await administrativeCompletions() }),
+  );
+  admin.get("/employees/:id/certificate", async (req, res) =>
+    res.json(await completionStatus(await employeeById(req.params.id))),
+  );
+  admin.post("/employees/:id/certificate", async (req, res) => {
+    const employee = await employeeById(req.params.id);
+    const input = certificateRequest.parse(req.body);
+    if (input.recipientId !== String(employee._id))
+      fail(
+        409,
+        "Review the matching employee before generating the certificate.",
+      );
+    const result = await issueCertificate(
+      employee._id,
+      req.user,
+      input.reviewKey,
+    );
+    res.status(result.created ? 201 : 200).json(result.completion);
+  });
+  admin.get("/employees/:id/certificate/pdf", async (req, res) => {
+    const employee = await employeeById(req.params.id);
+    await sendCertificate(res, employee._id, req.query.certificateId);
+  });
   admin.get("/overview", async (req, res) => {
     const [employees, progress, trainers, events] = await Promise.all([
       User.find({ role: "employee" }).sort({ createdAt: -1 }).lean(),
@@ -692,7 +790,11 @@ export async function createApp(mongoUrl) {
   admin.get("/employees/:id", async (req, res) => {
     const employee = await employeeById(req.params.id);
     const rows = await Progress.find({ employeeId: employee._id }).lean();
-    res.json({ employee: safeUser(employee), progress: progressSummary(rows) });
+    res.json({
+      employee: safeUser(employee),
+      progress: progressSummary(rows),
+      completion: await completionStatus(employee, { progress: rows }),
+    });
   });
   admin.patch("/employees/:id", async (req, res) => {
     const employee = await employeeById(req.params.id);
@@ -772,6 +874,7 @@ export async function createApp(mongoUrl) {
     await User.deleteOne({ _id: employee._id });
     await Progress.deleteMany({ employeeId: employee._id });
     await TrainingAttempt.deleteMany({ employeeId: employee._id });
+    await Certificate.deleteMany({ employeeId: employee._id });
     await audit(
       req,
       "permanently deleted an employee account and progress",

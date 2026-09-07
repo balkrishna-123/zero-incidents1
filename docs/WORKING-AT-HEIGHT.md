@@ -1,5 +1,11 @@
 # Working at Height — release 1.3
 
+> **Current release: 1.5.** The verified completion and PDF certificate flow is implemented. Use [CERTIFICATES.md](CERTIFICATES.md) for the latest installation and record policy. The curriculum and original release details below are retained for reference; genuine existing results are preserved.
+
+
+> **Historical release note (1.4).** All three modules are now playable; certificate generation is next. Use [HAZARD-PERCEPTION.md](HAZARD-PERCEPTION.md) for the latest update. This document retains the original module curriculum/release details. Existing course definitions, versions and results are preserved.
+
+
 **Released:** 6 September 2026  
 **Playable modules:** Manual Handling and Working at Height.  
 **Still pending:** Hazard Perception assessment and the final three-module certificate flow.
